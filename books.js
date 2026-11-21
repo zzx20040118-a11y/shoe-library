@@ -1,56 +1,41 @@
+import {fushengPages} from './fusheng.js';
+import {books as legacy} from './legacy.js';
+
 export const books = [
-  {
-    id:'tide', title:'潮声来信', author:'经纬编辑部', place:'外滩', city:'上海', region:'华东', en:'LETTERS FROM THE TIDE', col:'rust', art:'water', lat:31.2401, lon:121.4905,
-    aliases:['黄浦江','上海外滩','the bund'], tags:['江岸','书信'],
-    pages:[
-      '母亲把信封递给我时，邮戳已经褪成一朵浅紫色的花。她说，去把它还给写信的人吧。她没有告诉我回信该寄去哪里，只用铅笔在信封背面写了两个字：上海。',
-      '入夜的外滩，风从黄浦江对岸来。一艘船经过，舷灯在水上拖出漫长的金线。我靠着栏杆拆开信，纸上只有一句话：涨潮之前，我总在这里。',
-      '我等到卖花的人收摊，等到钟声又响了一次。没有人走来。后来我把那封信寄给母亲，另附一张空白明信片。她收到以后，在背面填了日期。那是父亲离开上海的那天。'
-    ], featured:1
-  },
-  {
-    id:'snow', title:'雪落在北海', author:'经纬编辑部', place:'北海公园', city:'北京', region:'华北', en:'SNOW OVER BEIHAI', col:'olive', art:'mountain', lat:39.9295, lon:116.3893,
-    aliases:['北海','白塔','beihai'], tags:['雪','冬日'],
-    pages:[
-      '下第一场雪的早晨，爷爷破天荒没开收音机。他从柜子里摸出一架旧照相机，用手帕包好，叫我系紧围巾。',
-      '北海公园的湖面冻得很安静，白塔也白得几乎看不清边缘。他举起相机，说别怕冷，等雪停再按快门。这张照片，我想寄给三十年前的自己。',
-      '他忘了上胶卷。我没有提醒他。他还举着相机，低头调整焦距，我站在落雪的一侧，第一次见他那样认真地笑。'
-    ], featured:1
-  },
-  {
-    id:'moon', title:'湖上拾月', author:'经纬编辑部', place:'西湖', city:'杭州', region:'华东', en:'A MOON ON THE LAKE', col:'blue', art:'moon', lat:30.2478, lon:120.1438,
-    aliases:['断桥','孤山','west lake'], tags:['月夜','湖泊'],
-    pages:[
-      '我带着一只木盒来杭州。盒子是外婆留下的，漆面有一道裂纹，里面夹着两张很多年前的船票。',
-      '西湖边的柳枝被月光照得发亮。船娘说，别看天上，往橹旁边看。我一低头，水里那轮月亮恰好散开，像一盘盛不住的碎银。',
-      '船靠岸时，我把两张船票压回木盒。它们已经没有用了，我还是忍不住摸了摸票角。好像总有一程水路，可以载我们回去。'
-    ], featured:1
-  },
-  {
-    id:'lamp', title:'巷口的灯', author:'经纬编辑部', place:'宽窄巷子', city:'成都', region:'西南', en:'A LIGHT IN THE LANE', col:'wine', art:'window', lat:30.6690, lon:104.0533,
-    aliases:['宽巷子','窄巷子','kuanzhai'], tags:['老街','归乡'],
-    pages:[
-      '离开成都以后，我总在深夜想起那盏灯。不是屋里的灯，是修鞋铺门前那盏。下雨时，光会沿着墙壁往下走。',
-      '回到宽窄巷子，修鞋铺已经改成茶馆。我点了一碗茶。老板把杯盖拨开，轻轻敲了两下桌面。那是我小时候向父亲讨糖的暗号。',
-      '我坐到了打烊。老板把门前的灯关掉之前，问我明天还来吗。我说来，顺便把那双开了线的旧鞋带过来。'
-    ], featured:1
-  },
-  {
-    id:'rain', title:'雨到武康路', author:'经纬编辑部', place:'武康路', city:'上海', region:'华东', en:'RAIN ON WUKANG ROAD', col:'olive', art:'window', lat:31.2065, lon:121.4377,
-    aliases:['武康大楼','法租界','wukang'], tags:['雨','老街'],
-    pages:[
-      '那把伞在车站挂了半个月。失物招领的纸一遍遍被风掀开。最后一行写着：木柄上刻了一个「宁」字。',
-      '武康路下起雨来，梧桐叶像一封封湿信贴在地面。我撑伞绕过武康大楼，才发觉木柄上的「宁」字是倒着刻的。那是他惯用的写法。',
-      '我把伞放回车站，重新抄了一张失物招领。没有留下电话，只在背面画了他教我画的那只鸟。'
-    ], featured:1
-  },
-  {
-    id:'harbor', title:'岛屿慢信', author:'经纬编辑部', place:'鼓浪屿', city:'厦门', region:'华东', en:'ISLAND POST', col:'blue', art:'water', lat:24.4464, lon:118.0686,
-    aliases:['厦门岛','日光岩','gulangyu'], tags:['海岛','书信'],
-    pages:[
-      '凌晨第一班轮渡还没出发，码头旁的铺子已经在炸花生。海风把香气吹到候船的人手里。',
-      '鼓浪屿的邮筒鼓着肚子，吞下我写给妹妹的第三封信。她叮嘱我要寄得慢一点，好让每一封信都能在周五到达。',
-      '我在回程的轮渡上接到她的电话。她问海是什么声音。我不知道怎么回答，就把手机举到栏杆外，让风替我说了一会儿。'
-    ], featured:1
-  }
+  {id:'fusheng',title:'浮生六记',author:'沈复',edition:'清 · 存世四卷全文',en:'SIX RECORDS OF A FLOATING LIFE',col:'olive',art:'window',pages:fushengPages,source:'https://www.gutenberg.org/ebooks/25192',
+   sites:[
+    ['滄浪亭','沧浪亭','苏州','华东',31.2902,120.6240,'苏州园林 吴门'],
+    ['虎丘','虎丘','苏州','华东',31.3381,120.5773,'虎丘山 吴门'],
+    ['斷橋','断桥','杭州','华东',30.2595,120.1474,'西湖 断桥残雪 钱塘'],
+    ['平山堂','平山堂','扬州','华东',32.4224,119.4086,'大明寺 广陵'],
+    ['趵突泉','趵突泉','济南','华东',36.6607,117.0092,'泉城 泉水 山东'],
+    ['大明湖','大明湖','济南','华东',36.6752,117.0216,'泉城 山东'],
+    ['滕王閣','滕王阁','南昌','华东',28.6812,115.8812,'赣江 江西']
+   ]},
+  {id:'huxin',title:'湖心亭看雪',author:'张岱',edition:'明末清初 ·《陶庵梦忆》单篇全文',en:'SNOW AT THE LAKE PAVILION',col:'blue',art:'moon',source:'https://zh.wikisource.org/wiki/湖心亭看雪',
+   pages:['崇祯五年十二月，余住西湖。大雪三日，湖中人鸟声俱绝。','是日更定矣，余拏一小舟，拥毳衣炉火，独往湖心亭看雪。雾凇沆砀，天与云与山与水，上下一白。湖上影子，惟长堤一痕、湖心亭一点、与余舟一芥、舟中人两三粒而已。','到亭上，有两人铺毡对坐，一童子烧酒炉正沸。见余，大喜曰：“湖中焉得更有此人！”拉余同饮。余强饮三大白而别。问其姓氏，是金陵人，客此。及下船，舟子喃喃曰：“莫说相公痴，更有痴似相公者！”'],
+   sites:[['西湖','西湖','杭州','华东',30.246,120.143,'浙江 湖泊'],['湖心亭','湖心亭','杭州','华东',30.246,120.141,'西湖 雪夜'],['金陵','南京','南京','华东',32.046,118.788,'金陵 江苏 籍贯']]},
+  {id:'yueyang',title:'岳阳楼记',author:'范仲淹',edition:'北宋 ·《范文正公集》单篇全文',en:'YUEYANG TOWER',col:'rust',art:'water',source:'https://zh.wikisource.org/wiki/岳陽樓記',
+   pages:['庆历四年春，滕子京谪守巴陵郡。越明年，政通人和，百废具兴，乃重修岳阳楼，增其旧制，刻唐贤今人诗赋于其上，属予作文以记之。','予观夫巴陵胜状，在洞庭一湖。衔远山，吞长江，浩浩汤汤，横无际涯，朝晖夕阴，气象万千，此则岳阳楼之大观也，前人之述备矣。然则北通巫峡，南极潇湘，迁客骚人，多会于此，览物之情，得无异乎？','若夫淫雨霏霏，连月不开，阴风怒号，浊浪排空，日星隐曜，山岳潜形，商旅不行，樯倾楫摧，薄暮冥冥，虎啸猿啼。登斯楼也，则有去国怀乡，忧谗畏讥，满目萧然，感极而悲者矣。','至若春和景明，波澜不惊，上下天光，一碧万顷，沙鸥翔集，锦鳞游泳，岸芷汀兰，郁郁青青。而或长烟一空，皓月千里，浮光跃金，静影沉璧，渔歌互答，此乐何极！登斯楼也，则有心旷神怡，宠辱偕忘，把酒临风，其喜洋洋者矣。','嗟夫！予尝求古仁人之心，或异二者之为，何哉？不以物喜，不以己悲。居庙堂之高则忧其民，处江湖之远则忧其君。是进亦忧，退亦忧。然则何时而乐耶？其必曰：“先天下之忧而忧，后天下之乐而乐”乎！噫！微斯人，吾谁与归？时六年九月十五日。'],
+   sites:[['岳阳楼','岳阳楼','岳阳','华中',29.3846,113.0878,'湖南 洞庭湖畔'],['巴陵','岳阳','岳阳','华中',29.377,113.091,'巴陵郡 岳州 湖南'],['洞庭','洞庭湖','岳阳','华中',29.375,113.075,'东洞庭湖 湖南 湖泊']]},
+  {id:'huanghe',title:'黄鹤楼送孟浩然之广陵',author:'李白',edition:'唐 · 七言绝句全文',en:'FAREWELL AT YELLOW CRANE TOWER',col:'wine',art:'mountain',source:'https://zh.wikisource.org/wiki/黃鶴樓送孟浩然之廣陵',
+   pages:['故人西辞黄鹤楼，烟花三月下扬州。\n孤帆远影碧空尽，唯见长江天际流。'],
+   sites:[['黄鹤楼','黄鹤楼','武汉','华中',30.5446,114.3026,'武昌 湖北 江城 送别'],['扬州','扬州','扬州','华东',32.395,119.414,'广陵 江苏 三月']]}
 ];
+
+export const allBooks = [...books,...legacy];
+export const anchors = [];
+for (const book of books) {
+  book.anchors = [];
+  for (const [term,place,city,region,lat,lon,keywords] of book.sites) {
+    book.pages.forEach((text,page) => {
+      for (let at=text.indexOf(term); at>=0; at=text.indexOf(term,at+term.length)) {
+        const anchor = {id:book.id+'-'+page+'-'+at,bookId:book.id,page,at,term,place,city,region,lat,lon,keywords};
+        book.anchors.push(anchor);
+        anchors.push(anchor);
+      }
+    });
+  }
+  const first = book.anchors[0];
+  Object.assign(book,{place:first.place,city:first.city,region:first.region,lat:first.lat,lon:first.lon,featured:first.page,aliases:[],tags:[]});
+}

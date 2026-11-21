@@ -1,4 +1,4 @@
-import {books} from './books.js';
+import {books,allBooks,anchors} from './books.js';
 
 const app = document.querySelector('#app');
 const icons = {
@@ -10,7 +10,7 @@ const icons = {
 };
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${icons[name]}</svg>`;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-const getBook = id => books.find(book => book.id === id);
+const getBook = id => allBooks.find(book => book.id === id);
 const normalize = value => value.toLocaleLowerCase().trim();
 const pageOf = (book, value) => Math.max(0, Math.min(book.pages.length - 1, Number.parseInt(value,10) || 0));
 
@@ -96,14 +96,33 @@ function textRanges(text, term) {
   }
   return ranges;
 }
+function locatedBook(book, anchor) {
+  return {...book,city:anchor.city,place:anchor.place,lat:anchor.lat,lon:anchor.lon,featured:anchor.page};
+}
 function matches(book) {
   const needle = normalize(query);
-  if (!needle) return {book,page:book.featured,term:book.place};
-  const page = book.pages.findIndex(text => normalize(text).includes(needle));
-  if (page >= 0) return {book,page,term:query};
-  const metadata = [book.title,book.place,book.city,book.author,book.en,...book.aliases,...book.tags];
-  if (metadata.some(value => normalize(value).includes(needle))) return {book,page:book.featured,term:book.place};
-  return null;
+  const eligible = book.anchors.filter(a => region === '全部' || a.region === region);
+  if (!eligible.length) return [];
+  if (!needle) {
+    const a = eligible[0];
+    return [{book:locatedBook(book,a),page:a.page,term:a.term}];
+  }
+  const pages = new Map();
+  for (const a of eligible) {
+    if ([a.term,a.place,a.city,...a.keywords.split(' ')].some(v => normalize(v).includes(needle))) {
+      if (!pages.has(a.page)) pages.set(a.page,{book:locatedBook(book,a),page:a.page,term:a.term});
+    }
+  }
+  for (const [page,text] of book.pages.entries()) {
+    if (!pages.has(page) && normalize(text).includes(needle) && (region === '全部' || eligible.some(a => a.page === page))) {
+      pages.set(page,{book,page,term:query});
+    }
+  }
+  if (!pages.size && [book.title,book.author,book.en].some(v => normalize(v).includes(needle))) {
+    const a = eligible[0];
+    pages.set(a.page,{book:locatedBook(book,a),page:a.page,term:a.term});
+  }
+  return [...pages.values()];
 }
 function cover(book) {
   return `<div class="cover ${book.col}" aria-hidden="true"><strong>${book.title}</strong><i class="cover-art ${book.art}"></i><small>${book.en}</small></div>`;
@@ -113,17 +132,17 @@ function bookCard({book,page,term,source,meta}) {
   return `<a class="book-card" href="${esc(readLink(book,page,term,source))}">${cover(book)}<div class="book-info"><h3>${book.title}</h3><p>${esc(meta || book.author)}</p><span class="place">${icon('pin')}${book.city} · ${book.place}</span><p class="snippet">${paint(text,textRanges(text,term))}</p></div></a>`;
 }
 function discover() {
-  const results = books.filter(book => region === '全部' || book.region === region).map(matches).filter(Boolean);
+  const results = books.flatMap(matches);
   app.innerHTML = `<div class="wrap"><section class="hero"><img src="/hero.jpg" class="hero-art" alt="" onerror="this.remove()"><div class="hero-copy">
     <div class="eyebrow">LITERARY ATLAS · 地点文学图书馆</div><h1>在一座城里，<br>读到另一座城。</h1>
     <p>从一条街、一座桥，走进写过它的故事。</p>
     <form id="search" class="search"><label class="search-box">${icon('search')}<input name="query" aria-label="地点或关键词" maxlength="80" placeholder="搜索城市、街道或关键词" value="${esc(query)}"><button>搜索</button></label><button type="button" id="locate" class="locate" ${locating ? 'disabled' : ''}>${icon('locate')}${locating ? '定位中' : '探索附近'}</button></form>
-    <div class="popular"><span>热门地点</span>${['上海外滩','北海公园','西湖','宽窄巷子'].map(place => `<button data-place="${place}">${place}</button>`).join('')}</div>
+    <div class="popular"><span>热门地点</span>${['沧浪亭','西湖','岳阳楼','黄鹤楼'].map(place => `<button data-place="${place}">${place}</button>`).join('')}</div>
     </div><div class="atlas-label">The Geography of Stories<small>文學地圖</small></div></section>
     ${locationMessage ? `<p class="map-caption" role="status">${esc(locationMessage)}</p>` : ''}
     ${mapState ? '<section class="section" id="nearby"><div class="section-head"><div><h2>附近的文学足迹</h2><p>已收录地点 · 15 公里内</p></div><button class="btn" id="close-map">关闭地图</button></div><div class="map" id="map" aria-label="附近文学地点地图"></div><div id="map-results"></div></section>' : ''}
-    <section class="section" id="results"><div class="section-head"><div><h2>${query ? '搜索结果' : '地点书单'}</h2><p>${query ? `“${esc(query)}” · ${results.length} 部作品` : '从这些地点出发，翻到故事发生的那一页。'}</p></div>
-    <div class="filters" aria-label="按地区筛选">${['全部','华东','华北','西南'].map(name => `<button class="${name === region ? 'active' : ''}" aria-pressed="${name === region}" data-region="${name}">${name}</button>`).join('')}</div></div>
+    <section class="section" id="results"><div class="section-head"><div><h2>${query ? '搜索结果' : '地点书单'}</h2><p>${query ? `“${esc(query)}” · ${results.length} 处匹配` : '从这些地点出发，翻到故事发生的那一页。'}</p></div>
+    <div class="filters" aria-label="按地区筛选">${['全部','华东','华中'].map(name => `<button class="${name === region ? 'active' : ''}" aria-pressed="${name === region}" data-region="${name}">${name}</button>`).join('')}</div></div>
     ${results.length ? `<div class="grid">${results.map(result => bookCard({...result,source:query || result.book.place})).join('')}</div>` : '<div class="empty">书库里暂时没有相关作品。试试附近的城市、地标或其他关键词。</div>'}</section></div>`;
   function search(value) {
     query = value.trim(); region = '全部'; render();
@@ -156,7 +175,7 @@ function locate() {
   locating = true; locationMessage = ''; render();
   navigator.geolocation.getCurrentPosition(({coords}) => {
     const center = {lat:coords.latitude,lon:coords.longitude};
-    const nearby = books.map(book => ({book,km:distance(center,book)})).filter(item => item.km <= 15).sort((a,b) => a.km - b.km);
+    const nearby = [...new Map(anchors.map(a=>[a.bookId+':'+a.term,a])).values()].map(a => ({book:locatedBook(getBook(a.bookId),a),pin:a.id,term:a.term,km:distance(center,a)})).filter(item => item.km <= 15).sort((a,b) => a.km - b.km);
     mapState = {center, nearby, zoom:nearby.at(-1)?.km > 6 ? 10 : 12, selected:null};
     locating = false;
     if (route().name === 'discover') { render(); document.querySelector('#nearby').scrollIntoView({block:'nearest'}); }
@@ -184,18 +203,18 @@ function renderMap() {
       tiles += `<img alt="" width="256" height="256" src="https://tile.openstreetmap.org/${zoom}/${(x+n)%n}/${y}.png" style="left:${x*256-x0}px;top:${y*256-y0}px">`;
     }
   }
-  const current = nearby.find(item => item.book.id === selected);
-  const cards = nearby.map(({book,km}) => bookCard({book,page:book.featured,term:book.place,source:'附近 · '+book.place,meta:`距你 ${km < 1 ? Math.round(km*1000)+' 米' : km.toFixed(1)+' 公里'}`}));
-  target.innerHTML = tiles + `<span class="pin you" style="left:50%;top:50%">你的位置</span>` + nearby.map(({book},index) => {
+  const current = nearby.find(item => item.pin === selected);
+  const cards = nearby.map(({book,km,term}) => bookCard({book,page:book.featured,term,source:'附近 · '+book.place,meta:`距你 ${km < 1 ? Math.round(km*1000)+' 米' : km.toFixed(1)+' 公里'}`}));
+  target.innerHTML = tiles + `<span class="pin you" style="left:50%;top:50%">你的位置</span>` + nearby.map(({book,pin},index) => {
     const [x,y] = project(book,zoom);
     const top = Math.max(40,Math.min(h-18,y-y0));
     const left = Math.max(52,Math.min(w-52,x-x0));
-    return `<button class="pin" style="left:${left}px;top:${top - (Math.abs(x-cx)<60 && Math.abs(y-cy)<35 ? 27+index*23 : 0)}px" data-pin="${book.id}" aria-pressed="${selected === book.id}">${book.place}</button>`;
+    return `<button class="pin" style="left:${left}px;top:${top - (Math.abs(x-cx)<60 && Math.abs(y-cy)<35 ? 27+index*23 : 0)}px" data-pin="${pin}" aria-pressed="${selected === pin}">${book.place}</button>`;
   }).join('') + `<div class="map-tools"><button id="zoom-in" aria-label="放大">+</button><button id="zoom-out" aria-label="缩小">−</button></div><a class="map-note" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>` + (current ? `<div class="map-popup">${cards[nearby.indexOf(current)]}</div>` : '');
   target.querySelectorAll('[data-pin]').forEach(button => button.onclick = () => {mapState.selected = selected === button.dataset.pin ? null : button.dataset.pin; renderMap();});
   target.querySelector('#zoom-in').onclick = () => {mapState.zoom = Math.min(17,zoom+1); renderMap();};
   target.querySelector('#zoom-out').onclick = () => {mapState.zoom = Math.max(4,zoom-1); renderMap();};
-  document.querySelector('#map-results').innerHTML = cards.length ? `<div class="grid" style="margin-top:12px">${cards.join('')}</div>` : '<p class="map-caption">附近暂未收录文学地点。可以搜索上海、北京、杭州、成都或厦门。</p>';
+  document.querySelector('#map-results').innerHTML = cards.length ? `<div class="grid" style="margin-top:12px">${cards.join('')}</div>` : '<p class="map-caption">附近暂未收录文学地点。可以搜索苏州、杭州、岳阳、武汉或济南。</p>';
 }
 
 function craftsFor(book, page) {
@@ -222,7 +241,7 @@ function collection([key,card]) {
   return `<div class="collection">${craftHTML(card)}<div class="actions"><a class="btn" href="${esc(readLink(book,card.page))}">打开原页</a><a class="btn" href="#studio?edit=${encodeURIComponent(key)}">编辑</a></div></div>`;
 }
 function shelf() {
-  const saved = books.filter(book => records['book:'+book.id]?.shelf).sort((a,b) => records['book:'+b.id].updated - records['book:'+a.id].updated);
+  const saved = allBooks.filter(book => records['book:'+book.id]?.shelf).sort((a,b) => records['book:'+b.id].updated - records['book:'+a.id].updated);
   const cards = craftsFor().sort((a,b) => b[1].updated - a[1].updated);
   app.innerHTML = `<div class="wrap inner"><h1>我的书架</h1>
     <p class="sub">${user ? '书籍、阅读进度和手作卡片会随账号保存。' : '访客书架保存在这台设备上。'}</p>
@@ -234,6 +253,48 @@ function shelf() {
     <section class="section"><div class="section-head"><h2>书签与文学打卡</h2><a class="btn" href="#studio">打开手作室</a></div>
     ${cards.length ? `<div class="collections">${cards.map(collection).join('')}</div>` : '<div class="empty">在阅读器里制作书签，或选中文字制作一张摘录卡。</div>'}</section></div>`;
 }
+function linkedText(text, ranges, places) {
+  let cursor = 0;
+  let html = '';
+  const segment = (from,to) => paint(text.slice(from,to),ranges.map(([a,b])=>[Math.max(a,from)-from,Math.min(b,to)-from]));
+  for (const a of [...places].sort((x,y)=>x.at-y.at)) {
+    if (a.at < cursor) continue;
+    html += segment(cursor,a.at) + '<button class="literary-link" data-anchor="'+a.id+'" title="查看'+esc(a.place)+'的读者书签">'+segment(a.at,a.at+a.term.length)+'</button>';
+    cursor = a.at+a.term.length;
+  }
+  return html + segment(cursor,text.length);
+}
+function openCommunity(a,book) {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'place-dialog';
+  dialog.innerHTML = `<div class="section-head"><div><p class="sub">《${book.title}》 · 第 ${a.page+1} 页</p><h2>${esc(a.term)}的读者书签</h2></div><button class="btn" data-close>关闭</button></div>
+  <p>原文「${esc(a.term)}」对应今天的${esc(a.city)} · ${esc(a.place)}。</p>
+  <p class="sub">地图参考点 ${a.lat.toFixed(3)}° N，${a.lon.toFixed(3)}° E · ${esc(a.keywords)}</p>
+  <div class="actions"><a class="btn" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lon}#map=15/${a.lat}/${a.lon}">查看地图</a>
+  <a class="btn solid" href="${studioLink(book,a.page,'bookmark')}&anchor=${a.id}">为此处制作书签</a></div>
+  <div class="collections" data-cards></div><p role="status" class="sub" data-status></p><button class="btn" data-more hidden>加载更多</button>`;
+  app.append(dialog);
+  dialog.showModal();
+  dialog.querySelector('[data-close]').onclick = () => dialog.close();
+  dialog.onclose = () => dialog.remove();
+  const status = dialog.querySelector('[data-status]');
+  const more = dialog.querySelector('[data-more]');
+  let cursor = '';
+  async function load() {
+    more.hidden = true; status.textContent = '正在读取公开书签…';
+    try {
+      const response = await fetch('/api/community?anchor='+a.id+(cursor ? '&before='+cursor : ''));
+      if (!response.ok) throw new Error();
+      const data = await response.json();
+      dialog.querySelector('[data-cards]').insertAdjacentHTML('beforeend',data.cards.map(c => craftHTML(c)).join(''));
+      status.textContent = !data.cards.length && !cursor ? '这里还没有公开书签。' : '';
+      cursor = data.next;
+      more.textContent = '加载更多'; more.hidden = !cursor;
+    } catch { status.textContent = '暂时无法读取书签。'; more.textContent = '重试'; more.hidden = false; }
+  }
+  more.onclick = load; load();
+}
+
 function reader(params) {
   const book = getBook(params.get('id'));
   if (!book) { app.innerHTML = '<div class="wrap inner"><div class="empty">这本书找不到了。<a href="#discover">返回发现</a></div></div>'; return; }
@@ -244,13 +305,14 @@ function reader(params) {
   const text = book.pages[page];
   const cards = craftsFor(book,page);
   const selectedRanges = cards.map(([,card]) => card.range).filter(Boolean);
+  const places = book.anchors?.filter(a => a.page === page) || [];
   const hit = textRanges(text,term);
   app.innerHTML = `<div class="wrap inner"><section class="reader">
     <div class="actions"><a class="btn" href="${previous.shelf && !source ? '#shelf' : '#discover'}">${previous.shelf && !source ? '返回书架' : '返回发现'}</a>
     <button class="btn solid" id="save-book">${previous.shelf ? '已加入书架' : '加入书架'}</button></div>
-    <article class="paper"><h1>${book.title}</h1><p class="sub">${book.author} · 原创短篇</p>
+    <article class="paper"><h1>${book.title}</h1><p class="sub">${book.author} · ${book.edition || '原创短篇'}${book.source ? ` · <a href="${esc(book.source)}" target="_blank" rel="noopener">公版底本</a>` : ''}</p>
     ${source ? `<span class="place">${icon('pin')}${esc(source)}</span>` : ''}
-    <p class="prose" id="prose">${paint(text,[...hit,...selectedRanges])}</p>
+    ${places.length ? '<p class="sub">点按带下划线的地名，查看现实位置和读者书签。</p>' : ''}<p class="prose" id="prose">${linkedText(text,[...hit,...selectedRanges],places)}</p>
     <div class="actions"><a class="btn" href="${studioLink(book,page,'bookmark')}">制作书签</a><button id="save-quote" class="btn">收藏高亮</button></div>
     <p class="sub">选中文字可以标记自己的摘录，也可以收藏当前命中的段落。</p>
     ${cards.length ? `<div class="folio"><h2>本页书签与摘录</h2><div class="collections">${cards.map(collection).join('')}</div></div>` : ''}
@@ -260,6 +322,7 @@ function reader(params) {
     ${page < book.pages.length-1 ? `<a class="btn" href="${esc(readLink(book,page+1,term,source))}">下一页</a>` : '<button class="btn" disabled>下一页</button>'}
     </div></section></div>`;
   const target = document.querySelector('#prose');
+  target.querySelectorAll('[data-anchor]').forEach(btn => btn.onclick = () => { if (!window.getSelection()?.toString()) openCommunity(places.find(a=>a.id===btn.dataset.anchor),book); });
   function selectedText() {
     const current = window.getSelection();
     if (!current?.rangeCount || current.isCollapsed) return selection;
@@ -316,7 +379,7 @@ function studio(params) {
     <label>照片<input type="file" id="photo" accept="image/png,image/jpeg,image/webp,image/gif"><span id="photo-status"></span></label>
     <div class="actions"><button type="button" class="btn" id="remove-photo">移除照片</button></div>
     <div><p class="sub">贴纸</p><div class="actions" id="stickers"></div></div>
-    <div class="actions"><button class="btn solid" id="save-card">保存到书页</button><a class="btn" href="#shelf">返回书架</a></div>
+    <div id="sharing"></div><div class="actions"><button class="btn solid" id="save-card">保存到书页</button><a class="btn" href="#shelf">返回书架</a></div>
   </form><div id="preview"></div></div></div>`;
   const editor = document.querySelector('#editor');
   const preview = document.querySelector('#preview');
@@ -327,6 +390,17 @@ function studio(params) {
   const id = saved ? key.slice(6) : crypto.randomUUID();
   let pendingPhoto = null;
   let revision = 0;
+  const sharing = document.querySelector('#sharing');
+  card.anchor = card.anchor || params.get('anchor') || '';
+  function sharingOptions() {
+    const places = getBook(card.book).anchors?.filter(a=>a.page === card.page) || [];
+    if (!places.some(a=>a.id === card.anchor)) card.anchor = places[0]?.id || '';
+    if (!card.anchor || !online) card.shared = false;
+    sharing.innerHTML = !places.length ? '' : !online ? '<p class="sub">登录后可把书签分享给这里的读者。</p>' :
+      `<label>对应原文<select name="anchor">${opts(places.map(a=>[a.id,a.term+' · '+getBook(card.book).pages[card.page].slice(Math.max(0,a.at-5),a.at+a.term.length+7)]),card.anchor)}</select></label>
+      <label class="share-check"><input type="checkbox" name="shared" ${card.shared ? 'checked' : ''}>公开这张卡片（包含照片与备忘）</label>`;
+  }
+  sharingOptions();
   const update = () => {
     preview.innerHTML = craftHTML(card,true);
     photoRemove.disabled = !card.photo;
@@ -334,6 +408,8 @@ function studio(params) {
   };
   editor.oninput = event => {
     const {name,value} = event.target;
+    if (name === 'anchor') { card.anchor = value; return; }
+    if (name === 'shared') { card.shared = event.target.checked; return; }
     if (name === 'book') {
       card.book = value;
       card.page = pageOf(getBook(value),records['book:'+value]?.page);
@@ -341,6 +417,7 @@ function studio(params) {
     } else if (name === 'page') card.page = Number(value);
     else if (['title','theme','font','memo'].includes(name)) card[name] = value;
     else return;
+    if (name === 'page' || name === 'book') { card.shared = false; sharingOptions(); }
     preview.innerHTML = craftHTML(card,true);
   };
   document.querySelector('#stickers').onclick = event => {
