@@ -1,0 +1,1 @@
+{"name":"wenxue-jingwei","private":true,"type":"module","scripts":{"build":"node build.mjs","preview":"node build.mjs && node preview.mjs"}}
