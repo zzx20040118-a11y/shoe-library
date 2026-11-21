@@ -1,3 +1,4 @@
+import {catalog} from 'https://zzx20040118-a11y.github.io/shoe-library/catalog.js';
 import {fushengPages} from './fusheng.js';
 import {books as legacy} from './legacy.js';
 
@@ -23,7 +24,7 @@ export const books = [
    sites:[['黄鹤楼','黄鹤楼','武汉','华中',30.5446,114.3026,'武昌 湖北 江城 送别'],['扬州','扬州','扬州','华东',32.395,119.414,'广陵 江苏 三月']]}
 ];
 
-export const allBooks = [...books,...legacy];
+
 export const anchors = [];
 for (const book of books) {
   book.anchors = [];
@@ -38,4 +39,40 @@ for (const book of books) {
   }
   const first = book.anchors[0];
   Object.assign(book,{place:first.place,city:first.city,region:first.region,lat:first.lat,lon:first.lon,featured:first.page,aliases:[],tags:[]});
+}
+
+const coverColors=['blue','rust','olive','wine'];
+const coverArt=['window','water','mountain','moon'];
+for (const entry of catalog) {
+  const {locations,...metadata}=entry;
+  const number=Number(entry.id.slice(2));
+  const book={...metadata,source:'https://www.gutenberg.org/ebooks/'+number,edition:entry.lang+' · 公版电子书',col:coverColors[number%4],art:coverArt[number%4],pages:new Array(entry.count),anchors:[],place:'',city:'',featured:0};
+  for (const {site,page,at,snippet} of locations) {
+    const [term,place,city,region,lat,lon,keywords]=site;
+    const a={id:book.id+'-'+page+'-'+at,bookId:book.id,term,place,city,region,lat,lon,keywords,page,at,snippet};
+    book.anchors.push(a); anchors.push(a);
+  }
+  if(book.anchors.length) {
+    const a=book.anchors[0];
+    Object.assign(book,{place:a.place,city:a.city,region:a.region,lat:a.lat,lon:a.lon,featured:a.page});
+  }
+  books.push(book);
+}
+export const allBooks=[...books,...legacy];
+const pending=new Map();
+export const pagesOrigin='https://zzx20040118-a11y.github.io';
+export const cloudOrigin='https://wenxue-jingwei.vividchutney33.chatgpt.site';
+export async function loadBook(book) {
+  if (!book?.count || book.loaded) return;
+  if (!pending.has(book.id)) pending.set(book.id,(async()=>{
+    const response=await fetch(pagesOrigin+'/shoe-library/library/'+book.id+'.json.gz');
+    if (!response.ok) throw Error('下载失败');
+    const bytes=new Uint8Array(await response.arrayBuffer());
+    const stream=new Blob([bytes]).stream();
+    const decoded=bytes[0]===31 && bytes[1]===139 ? stream.pipeThrough(new DecompressionStream('gzip')) : stream;
+    const pages=await new Response(decoded).json();
+    if (!Array.isArray(pages) || pages.length!==book.count || !pages.every(p=>typeof p==='string')) throw Error('正文校验失败');
+    book.pages=pages; book.loaded=true;
+  })().finally(()=>pending.delete(book.id)));
+  await pending.get(book.id);
 }
