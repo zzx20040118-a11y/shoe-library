@@ -1,4 +1,4 @@
-import {catalog} from 'https://zzx20040118-a11y.github.io/shoe-library/catalog.js';
+import {catalog} from './catalog.js';
 import {fushengPages} from './fusheng.js';
 import {books as legacy} from './legacy.js';
 
