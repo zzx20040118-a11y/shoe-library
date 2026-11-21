@@ -1,4 +1,4 @@
-import {books,allBooks,anchors} from './books.js';
+import {books,allBooks,anchors,loadBook,pagesOrigin,cloudOrigin} from './books.js';
 
 const app = document.querySelector('#app');
 const icons = {
@@ -10,6 +10,9 @@ const icons = {
 };
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${icons[name]}</svg>`;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
+const staticSite = location.origin === pagesOrigin;
+const accountOrigin = staticSite ? cloudOrigin : '';
+let renderVersion=0;
 const getBook = id => allBooks.find(book => book.id === id);
 const normalize = value => value.toLocaleLowerCase().trim();
 const pageOf = (book, value) => Math.max(0, Math.min(book.pages.length - 1, Number.parseInt(value,10) || 0));
@@ -102,7 +105,10 @@ function locatedBook(book, anchor) {
 function matches(book) {
   const needle = normalize(query);
   const eligible = book.anchors.filter(a => region === '全部' || a.region === region);
-  if (!eligible.length) return [];
+  if (!eligible.length) {
+    if (region==='全部' && needle && [book.title,book.en,book.author].some(v=>normalize(v).includes(needle))) return [{book,page:0,term:''}];
+    return [];
+  }
   if (!needle) {
     const a = eligible[0];
     return [{book:locatedBook(book,a),page:a.page,term:a.term}];
@@ -113,7 +119,7 @@ function matches(book) {
       if (!pages.has(a.page)) pages.set(a.page,{book:locatedBook(book,a),page:a.page,term:a.term});
     }
   }
-  for (const [page,text] of book.pages.entries()) {
+  for (const [page,text] of (!book.count || book.loaded ? book.pages : []).entries()) {
     if (!pages.has(page) && normalize(text).includes(needle) && (region === '全部' || eligible.some(a => a.page === page))) {
       pages.set(page,{book,page,term:query});
     }
@@ -125,25 +131,32 @@ function matches(book) {
   return [...pages.values()];
 }
 function cover(book) {
-  return `<div class="cover ${book.col}" aria-hidden="true"><strong>${book.title}</strong><i class="cover-art ${book.art}"></i><small>${book.en}</small></div>`;
+  return `<div class="cover ${book.col}" aria-hidden="true"><strong>${esc(book.title)}</strong><i class="cover-art ${book.art}"></i><small>${esc(book.en)}</small></div>`;
 }
 function bookCard({book,page,term,source,meta}) {
-  const text = book.pages[page ?? book.featured];
-  return `<a class="book-card" href="${esc(readLink(book,page,term,source))}">${cover(book)}<div class="book-info"><h3>${book.title}</h3><p>${esc(meta || book.author)}</p><span class="place">${icon('pin')}${book.city} · ${book.place}</span><p class="snippet">${paint(text,textRanges(text,term))}</p></div></a>`;
+  const text = book.pages[page ?? book.featured] || book.anchors?.find(a=>a.page===page)?.snippet || book.sample || '';
+  return `<a class="book-card" href="${esc(readLink(book,page,term,source))}">${cover(book)}<div class="book-info"><h3>${esc(book.title)}</h3><p>${esc(meta || book.author)}</p><span class="place">${book.place ? icon('pin')+esc(book.city)+' · '+esc(book.place) : esc(book.lang || '中文')+' · '+book.pages.length+' 页'}</span><p class="snippet">${paint(text,textRanges(text,term))}</p></div></a>`;
 }
 function discover() {
   const results = books.flatMap(matches);
-  app.innerHTML = `<div class="wrap"><section class="hero"><img src="/hero.jpg" class="hero-art" alt="" onerror="this.remove()"><div class="hero-copy">
+  let resultLimit=30;
+  app.innerHTML = `<div class="wrap"><section class="hero"><img src="./hero.jpg" class="hero-art" alt="" onerror="this.remove()"><div class="hero-copy">
     <div class="eyebrow">LITERARY ATLAS · 地点文学图书馆</div><h1>在一座城里，<br>读到另一座城。</h1>
     <p>从一条街、一座桥，走进写过它的故事。</p>
     <form id="search" class="search"><label class="search-box">${icon('search')}<input name="query" aria-label="地点或关键词" maxlength="80" placeholder="搜索城市、街道或关键词" value="${esc(query)}"><button>搜索</button></label><button type="button" id="locate" class="locate" ${locating ? 'disabled' : ''}>${icon('locate')}${locating ? '定位中' : '探索附近'}</button></form>
-    <div class="popular"><span>热门地点</span>${['沧浪亭','西湖','岳阳楼','黄鹤楼'].map(place => `<button data-place="${place}">${place}</button>`).join('')}</div>
+    <div class="popular"><span>热门地点</span>${['沧浪亭','西湖','贝克街','瓦尔登湖'].map(place => `<button data-place="${place}">${place}</button>`).join('')}</div>
     </div><div class="atlas-label">The Geography of Stories<small>文學地圖</small></div></section>
     ${locationMessage ? `<p class="map-caption" role="status">${esc(locationMessage)}</p>` : ''}
     ${mapState ? '<section class="section" id="nearby"><div class="section-head"><div><h2>附近的文学足迹</h2><p>已收录地点 · 15 公里内</p></div><button class="btn" id="close-map">关闭地图</button></div><div class="map" id="map" aria-label="附近文学地点地图"></div><div id="map-results"></div></section>' : ''}
     <section class="section" id="results"><div class="section-head"><div><h2>${query ? '搜索结果' : '地点书单'}</h2><p>${query ? `“${esc(query)}” · ${results.length} 处匹配` : '从这些地点出发，翻到故事发生的那一页。'}</p></div>
-    <div class="filters" aria-label="按地区筛选">${['全部','华东','华中'].map(name => `<button class="${name === region ? 'active' : ''}" aria-pressed="${name === region}" data-region="${name}">${name}</button>`).join('')}</div></div>
-    ${results.length ? `<div class="grid">${results.map(result => bookCard({...result,source:query || result.book.place})).join('')}</div>` : '<div class="empty">书库里暂时没有相关作品。试试附近的城市、地标或其他关键词。</div>'}</section></div>`;
+    <div class="filters" aria-label="按地区筛选">${['全部','华东','华中','西南','欧洲','北美'].map(name => `<button class="${name === region ? 'active' : ''}" aria-pressed="${name === region}" data-region="${name}">${name}</button>`).join('')}</div></div>
+    ${results.length ? `<div class="grid">${results.slice(0,resultLimit).map(result => bookCard({...result,source:query || result.book.place})).join('')}</div>` : '<div class="empty">书库里暂时没有相关作品。试试附近的城市、地标或其他关键词。</div>'}${results.length > resultLimit ? '<button class="btn" id="more-matches">显示更多匹配</button>' : ''}</section></div>`;
+  const moreMatches=app.querySelector('#more-matches');
+  if (moreMatches) moreMatches.onclick=()=>{
+    const next=results.slice(resultLimit,resultLimit+30); resultLimit+=next.length;
+    app.querySelector('#results .grid').insertAdjacentHTML('beforeend',next.map(result=>bookCard({...result,source:query||result.book.place})).join(''));
+    moreMatches.hidden=resultLimit>=results.length;
+  };
   function search(value) {
     query = value.trim(); region = '全部'; render();
     document.querySelector('#results').scrollIntoView({block:'nearest'});
@@ -230,9 +243,9 @@ function craftHTML(card, isPreview = false) {
     ${stickers ? `<div class="sticker">${esc(stickers)}</div>` : ''}
     <strong>${esc(card.title || (card.type === 'bookmark' ? '我的书签' : '我的文学打卡'))}</strong>
     ${card.quote ? `<p class="quote">“${esc(card.quote)}”</p>` : ''}
-    ${card.photo ? `<img src="${esc(card.photo)}" alt="卡片照片">` : ''}
+    ${card.photo ? `<img src="${esc(card.photo.startsWith('/api/shared-photo/') ? accountOrigin+card.photo : card.photo)}" alt="卡片照片">` : ''}
     ${card.memo ? `<p>${esc(card.memo)}</p>` : ''}
-    ${getBook(card.book) ? `<small>《${getBook(card.book).title}》 · 第 ${card.page+1} 页</small>` : ''}
+    ${getBook(card.book) ? `<small>《${esc(getBook(card.book).title)}》 · 第 ${card.page+1} 页</small>` : ''}
   </article>`;
 }
 function collection([key,card]) {
@@ -267,7 +280,7 @@ function linkedText(text, ranges, places) {
 function openCommunity(a,book) {
   const dialog = document.createElement('dialog');
   dialog.className = 'place-dialog';
-  dialog.innerHTML = `<div class="section-head"><div><p class="sub">《${book.title}》 · 第 ${a.page+1} 页</p><h2>${esc(a.term)}的读者书签</h2></div><button class="btn" data-close>关闭</button></div>
+  dialog.innerHTML = `<div class="section-head"><div><p class="sub">《${esc(book.title)}》 · 第 ${a.page+1} 页</p><h2>${esc(a.term)}的读者书签</h2></div><button class="btn" data-close>关闭</button></div>
   <p>原文「${esc(a.term)}」对应今天的${esc(a.city)} · ${esc(a.place)}。</p>
   <p class="sub">地图参考点 ${a.lat.toFixed(3)}° N，${a.lon.toFixed(3)}° E · ${esc(a.keywords)}</p>
   <div class="actions"><a class="btn" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lon}#map=15/${a.lat}/${a.lon}">查看地图</a>
@@ -283,7 +296,7 @@ function openCommunity(a,book) {
   async function load() {
     more.hidden = true; status.textContent = '正在读取公开书签…';
     try {
-      const response = await fetch('/api/community?anchor='+a.id+(cursor ? '&before='+cursor : ''));
+      const response = await fetch(accountOrigin+'/api/community?anchor='+a.id+(cursor ? '&before='+cursor : ''));
       if (!response.ok) throw new Error();
       const data = await response.json();
       dialog.querySelector('[data-cards]').insertAdjacentHTML('beforeend',data.cards.map(c => craftHTML(c)).join(''));
@@ -310,17 +323,31 @@ function reader(params) {
   app.innerHTML = `<div class="wrap inner"><section class="reader">
     <div class="actions"><a class="btn" href="${previous.shelf && !source ? '#shelf' : '#discover'}">${previous.shelf && !source ? '返回书架' : '返回发现'}</a>
     <button class="btn solid" id="save-book">${previous.shelf ? '已加入书架' : '加入书架'}</button></div>
-    <article class="paper"><h1>${book.title}</h1><p class="sub">${book.author} · ${book.edition || '原创短篇'}${book.source ? ` · <a href="${esc(book.source)}" target="_blank" rel="noopener">公版底本</a>` : ''}</p>
+    <article class="paper"><h1>${esc(book.title)}</h1><p class="sub">${esc(book.author)} · ${esc(book.edition || '原创短篇')}${book.source ? ` · <a href="${esc(book.source)}" target="_blank" rel="noopener">公版底本</a>` : ''}</p>
     ${source ? `<span class="place">${icon('pin')}${esc(source)}</span>` : ''}
     ${places.length ? '<p class="sub">点按带下划线的地名，查看现实位置和读者书签。</p>' : ''}<p class="prose" id="prose">${linkedText(text,[...hit,...selectedRanges],places)}</p>
     <div class="actions"><a class="btn" href="${studioLink(book,page,'bookmark')}">制作书签</a><button id="save-quote" class="btn">收藏高亮</button></div>
     <p class="sub">选中文字可以标记自己的摘录，也可以收藏当前命中的段落。</p>
+    ${book.count ? '<p class="sub">电子版底本由 Project Gutenberg 收录，权利标记为美国公有领域。<a target="_blank" rel="noopener" href="https://www.gutenberg.org/policy/license.html">电子版使用条款</a></p>' : ''}
     ${cards.length ? `<div class="folio"><h2>本页书签与摘录</h2><div class="collections">${cards.map(collection).join('')}</div></div>` : ''}
+    ${book.pages.length>8 ? `<details class="book-tools"><summary>跳页与书内检索</summary><form id="goto-page"><label>页码 <input name="number" type="number" min="1" max="${book.pages.length}" value="${page+1}" required></label><button class="btn">跳转</button></form><form id="find-text"><input name="term" aria-label="书内关键词" placeholder="输入正文中的词语" maxlength="80" required><button class="btn">查找下一处</button></form></details>` : ''}
     </article><div class="reader-controls">
     ${page > 0 ? `<a class="btn" href="${esc(readLink(book,page-1,term,source))}">上一页</a>` : '<button class="btn" disabled>上一页</button>'}
     <span class="sub">第 ${page+1} 页 / 共 ${book.pages.length} 页</span>
     ${page < book.pages.length-1 ? `<a class="btn" href="${esc(readLink(book,page+1,term,source))}">下一页</a>` : '<button class="btn" disabled>下一页</button>'}
     </div></section></div>`;
+  const jump=app.querySelector('#goto-page');
+  if(jump) {
+    jump.onsubmit=e=>{e.preventDefault();location.hash=readLink(book,Number(jump.elements.number.value)-1);};
+    app.querySelector('#find-text').onsubmit=e=>{
+      e.preventDefault();const word=e.currentTarget.elements.term.value.trim();if(!word)return;
+      for(let offset=term===word?1:0;offset<=book.pages.length;offset++){
+        const p=(page+offset)%book.pages.length;
+        if(book.pages[p].toLowerCase().includes(word.toLowerCase())){location.hash=readLink(book,p,word);return;}
+      }
+      toast('这本书中没有找到该词。');
+    };
+  }
   const target = document.querySelector('#prose');
   target.querySelectorAll('[data-anchor]').forEach(btn => btn.onclick = () => { if (!window.getSelection()?.toString()) openCommunity(places.find(a=>a.id===btn.dataset.anchor),book); });
   function selectedText() {
@@ -368,10 +395,10 @@ function studio(params) {
   card.stickers = [...card.stickers];
   const locked = Boolean(saved || params.has('id'));
   const opts = (items,value) => items.map(([id,label]) => `<option value="${esc(id)}" ${String(id) === String(value) ? 'selected' : ''}>${esc(label)}</option>`).join('');
-  const pages = () => opts(getBook(card.book).pages.map((_,i) => [i,`第 ${i+1} 页`]),card.page);
+  const pages = () => opts(Array.from({length:getBook(card.book).pages.length},(_,i) => [i,`第 ${i+1} 页`]),card.page);
   app.innerHTML = `<div class="wrap inner"><h1>手作室</h1><p class="sub">${card.type === 'quote' ? '让一段摘录成为你的文学打卡。' : '给故事里的这一页做一枚书签。'}</p>
   <div class="studio"><form class="editor" id="editor">
-    ${locked ? `<p class="sub">《${getBook(card.book).title}》 · 第 ${card.page+1} 页</p>` : `<label>选择书籍<select name="book">${opts(books.map(item => [item.id,item.title]),card.book)}</select></label><label>插入页码<select name="page">${pages()}</select></label>`}
+    ${locked ? `<p class="sub">《${esc(getBook(card.book).title)}》 · 第 ${card.page+1} 页</p>` : `<label>选择书籍<select name="book">${opts(books.map(item => [item.id,item.title]),card.book)}</select></label><label>插入页码<select name="page">${pages()}</select></label>`}
     <label>标题<input name="title" maxlength="70" value="${esc(card.title)}" placeholder="写下标题"></label>
     <label>备忘<textarea name="memo" maxlength="1500" placeholder="记录这次阅读或到访的记忆">${esc(card.memo)}</textarea></label>
     <label>纸面模板<select name="theme">${opts([['paper','旧纸'],['green','叶绿'],['rose','蔷薇'],['night','深海']],card.theme)}</select></label>
@@ -397,7 +424,7 @@ function studio(params) {
     if (!places.some(a=>a.id === card.anchor)) card.anchor = places[0]?.id || '';
     if (!card.anchor || !online) card.shared = false;
     sharing.innerHTML = !places.length ? '' : !online ? '<p class="sub">登录后可把书签分享给这里的读者。</p>' :
-      `<label>对应原文<select name="anchor">${opts(places.map(a=>[a.id,a.term+' · '+getBook(card.book).pages[card.page].slice(Math.max(0,a.at-5),a.at+a.term.length+7)]),card.anchor)}</select></label>
+      `<label>对应原文<select name="anchor">${opts(places.map(a=>[a.id,a.term+' · '+(getBook(card.book).pages[card.page]?.slice(Math.max(0,a.at-5),a.at+a.term.length+7) || a.snippet || a.term)]),card.anchor)}</select></label>
       <label class="share-check"><input type="checkbox" name="shared" ${card.shared ? 'checked' : ''}>公开这张卡片（包含照片与备忘）</label>`;
   }
   sharingOptions();
@@ -480,7 +507,25 @@ function studio(params) {
   };
   update();
 }
-function render() {
+let catalogQuery='', catalogLanguage='全部', catalogLimit=30;
+function library() {
+  app.innerHTML=`<section class="wrap inner"><h1>公版书库</h1><p class="sub">收录 ${books.length.toLocaleString()} 部作品与版本 · 正文按需载入</p>
+  <form class="library-search" id="catalog-form"><label class="search-box">${icon('search')}<input aria-label="查找书名或作者" name="term" value="${esc(catalogQuery)}" placeholder="搜索书名、原名或作者"><button>查找</button></label>
+  <select class="btn" aria-label="正文语言" id="catalog-language">${['全部',...new Set(books.map(b=>b.lang || '中文'))].map(l=>`<option ${l===catalogLanguage?'selected':''}>${esc(l)}</option>`).join('')}</select></form>
+  <p id="catalog-count" class="sub" role="status"></p><div class="grid" id="catalog-results"></div><button id="catalog-more" class="btn">显示更多作品</button></section>`;
+  const draw=()=>{
+    const q=normalize(catalogQuery);
+    const hits=books.filter(b=>(catalogLanguage==='全部'||(b.lang || '中文')===catalogLanguage)&&[b.title,b.author,b.en].some(v=>normalize(v).includes(q)));
+    app.querySelector('#catalog-count').textContent='共 '+hits.length+' 个版本';
+    app.querySelector('#catalog-results').innerHTML=hits.slice(0,catalogLimit).map(book=>bookCard({book,page:0,meta:book.author+' · '+(book.lang||'中文')})).join('')||'<p class="empty">未找到作品，可尝试原名或作者姓氏。</p>';
+    app.querySelector('#catalog-more').hidden=catalogLimit>=hits.length;
+  };
+  app.querySelector('#catalog-form').onsubmit=e=>{e.preventDefault();catalogQuery=new FormData(e.currentTarget).get('term').trim();catalogLimit=30;draw();};
+  app.querySelector('#catalog-language').onchange=e=>{catalogLanguage=e.target.value;catalogLimit=30;draw();};
+  app.querySelector('#catalog-more').onclick=()=>{catalogLimit+=30;draw();};draw();
+}
+async function render() {
+  const version=++renderVersion;
   mapObserver?.disconnect();
   selection = null;
   const {name,params} = route();
@@ -489,7 +534,21 @@ function render() {
     link.classList.toggle('active',active);
     if (active) link.setAttribute('aria-current','page'); else link.removeAttribute('aria-current');
   });
-  if (name === 'shelf') shelf();
+  const reading = name==='reader' || name==='studio' ? getBook(params.get('id') || records[params.get('edit')]?.book) : null;
+  if (reading?.count && !reading.loaded) {
+    app.innerHTML='<div class="wrap inner" role="status">正在载入《'+esc(reading.title)+'》…</div>';
+    try { await loadBook(reading); }
+    catch {
+      if(version===renderVersion){
+        app.innerHTML='<div class="wrap inner"><p class="empty">正文下载失败，请检查网络后重试。</p><button class="btn" id="retry-book">重新载入</button></div>';
+        app.querySelector('#retry-book').onclick=render;
+      }
+      return;
+    }
+    if(version!==renderVersion)return;
+  }
+  if (name === 'library') library();
+  else if (name === 'shelf') shelf();
   else if (name === 'reader') reader(params);
   else if (name === 'studio') studio(params);
   else discover();
@@ -497,23 +556,25 @@ function render() {
 async function boot() {
   document.querySelectorAll('[data-icon]').forEach(element => element.innerHTML = icon(element.dataset.icon));
   try {
+    if(staticSite) { records=localState(); } else {
     const response = await fetch('/api/records',{cache:'no-store'});
     if (!response.ok) throw new Error();
     const state = await response.json();
     user = state.user;
     online = Boolean(user);
     records = online ? state.records : localState();
+    }
   } catch { records = localState(); }
   const account = document.querySelector('#account');
   const returnTo = encodeURIComponent('/'+location.hash);
   account.innerHTML = user
     ? `<a class="account" href="/signout-with-chatgpt?return_to=%2F" title="退出登录" target="_top">${icon('user')}<span>${esc(user.name)}</span> · 退出</a>`
-    : `<a class="account" href="/signin-with-chatgpt?return_to=${returnTo}" target="_top">${icon('user')} 登录</a>`;
+    : `<a class="account" data-login href="${accountOrigin}/signin-with-chatgpt?return_to=${returnTo}" target="_top">${icon('user')} 登录云书架</a>`;
   render();
   window.addEventListener('hashchange',() => {
     render();
-    const signIn = account.querySelector('a[href^="/signin-with-chatgpt"]');
-    if (signIn) signIn.href = '/signin-with-chatgpt?return_to=' + encodeURIComponent('/'+location.hash);
+    const signIn = account.querySelector('[data-login]');
+    if (signIn) signIn.href = accountOrigin+'/signin-with-chatgpt?return_to=' + encodeURIComponent('/'+location.hash);
     window.scrollTo(0,0);
   });
 }
