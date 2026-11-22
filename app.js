@@ -177,14 +177,14 @@ function bookCard({book,page,term,source,meta}) {
 }
 function discover(){
   const groups=books.map(book=>({book,hits:matches(book)})).filter(g=>g.hits.length);
-  const featured=['fusheng','huxin','pg1661'].map(id=>getBook(id)).filter(Boolean);
+  const featured=books.filter(b=>b.anchors?.length).slice(0,3);
   app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="书名、作家、地点、生活主题或原文" value="${esc(query)}"><button>搜索</button></form><div class="entry"><a class="explore-link" href="#explore">${icon('locate')} 探索身边</a></div></div><figure class="landprint"><canvas aria-label="原创套色版画：层山与落日" role="img"></canvas><figcaption>山行 · 套色习作</figcaption></figure></section>
-  ${!query?'<section class="picks"><h2>漫游选读</h2><div>'+featured.map(b=>{const a=b.anchors[0];return '<a href="'+esc(readLink(b,a.page,a.term,a.place))+'"><small>'+esc(a.city)+' · '+esc(a.place)+'</small><h3>'+esc(b.title)+'</h3><p>'+esc(excerpt(b,a.page,a.term,a.snippet,a.at))+'</p></a>'}).join('')+'</div></section>':''}
+  ${!query&&featured.length?'<section class="picks"><h2>漫游选读</h2><div>'+featured.map(b=>{const a=b.anchors[0];return '<a href="'+esc(readLink(b,a.page,a.term,a.place))+'"><small>'+esc(a.city)+' · '+esc(a.place)+'</small><h3>'+esc(b.title)+'</h3><p>'+esc(excerpt(b,a.page,a.term,a.snippet,a.at))+'</p></a>'}).join('')+'</div></section>':''}
   <section class="section" id="results"><div class="section-head"><h2>${query?'搜索结果':'全部作品'}</h2><small>${groups.length} 部作品与版本</small></div><div class="stacks"></div><button class="btn" id="more">继续浏览</button></section></div>`;
   drawLandscape(app.querySelector('.landprint canvas'));
   let shown=0;const more=app.querySelector('#more');
   function append(){app.querySelector('.stacks').insertAdjacentHTML('beforeend',groups.slice(shown,shown+24).map(g=>stack(g.book,g.hits)).join(''));shown+=24;more.hidden=shown>=groups.length;}
-  append();if(!groups.length)app.querySelector('.stacks').textContent='未找到匹配。可以试试原文拼写或作者姓氏。';
+  append();if(!groups.length)app.querySelector('.stacks').textContent=books.length?'未找到匹配。可以试试原文拼写或作者姓氏。':'书库正在重建。新作品通过正文与地点审核后将在这里上架。';
   app.querySelector('#search').onsubmit=e=>{e.preventDefault();query=new FormData(e.currentTarget).get('query').trim();if(user&&query)personal.logSearch(query).catch(()=>toast('搜索历史暂未同步'));render();app.querySelector('#results')?.scrollIntoView();};
   more.onclick=append;
 }
@@ -449,7 +449,6 @@ function studio(params) {
   const key = params.get('edit');
   const saved = key?.startsWith('craft:') ? records[key] : null;
   const book = getBook(params.get('id')) || books[0];
-  if(!book){app.innerHTML='<div class="wrap inner"><h1>书库正在重建</h1><p>暂时没有已审核上架的作品。</p><a href="#discover">返回发现</a></div>';return;}
   if(!book){app.innerHTML='<div class="wrap inner"><h1>书库正在重建</h1><p>暂时没有已审核上架的作品。</p><a href="#discover">返回发现</a></div>';return;}
   const page = pageOf(book,params.get('p') ?? records['book:'+book.id]?.page);
   const pending = draft?.book === book.id && draft.page === page && params.get('type') === 'quote' ? draft : null;
