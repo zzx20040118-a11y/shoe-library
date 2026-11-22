@@ -325,7 +325,11 @@ function linkedText(text, ranges, places) {
     html += segment(cursor,a.at) + '<button class="literary-link" data-anchor="'+a.id+'" title="查看'+esc(a.place)+'的读者书签">'+segment(a.at,a.at+a.term.length)+'</button>';
     cursor = a.at+a.term.length;
   }
-  return html + segment(cursor,text.length);
+  html += segment(cursor,text.length);
+  // Render actual novel paragraphs, rather than relying on plain-text whitespace.
+  // This preserves every text offset used by highlights, quotations and place links.
+  const parts=html.split(/(?:\\r?\\n[ \\t]*){2,}/);
+  return parts.map(part=>'<p class="novel-paragraph">'+part.replace(/^\\s+|\\s+$/g,'').replace(/\\r?\\n/g,' ')+'</p>').join('');
 }
 function openCommunity(a,book) {
   const dialog = document.createElement('dialog');
