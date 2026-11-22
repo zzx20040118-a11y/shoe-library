@@ -2,7 +2,7 @@
 import {mkdir,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const id='pg1661';
-const urls=['https://www.gutenberg.org/cache/epub/1661/pg1661.txt','https://www.gutenberg.org/ebooks/1661.txt.utf-8'];
+const urls=['https://raw.githubusercontent.com/GITenberg/The-Adventures-of-Sherlock-Holmes_1661/master/1661.txt','https://www.gutenberg.org/cache/epub/1661/pg1661.txt','https://www.gutenberg.org/ebooks/1661.txt.utf-8'];
 let raw='',source='';
 for(const url of urls){try{const r=await fetch(url);if(r.ok){raw=await r.text();source=url;break}}catch(e){console.warn(e.message)}}
 if(!raw)throw Error('Source download failed; no book published');
