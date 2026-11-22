@@ -53,7 +53,7 @@ for(const entry of entries){
  if(pageTexts.join('\n\n')!==blocks.map(b=>b.text).join('\n\n'))throw Error('Lossless QA failed '+entry.id);
  const locations=[];
  for(const [term,lat,lon] of sites){
-  const re=new RegExp('\\b'+term.replace(/[.*+?^$()|[\]{}]/g,'\\$&')+'\\b','gi');
+  const re=new RegExp('\\b'+term.replaceAll('.', '\\.').replaceAll('?', '\\?')+'\\b','gi');
   for(let p=0;p<pageTexts.length;p++)for(const m of pageTexts[p].matchAll(re)){
    locations.push({term,place:term,city:'London',lat,lon,page:p,at:m.index,
     snippet:pageTexts[p].slice(Math.max(0,m.index-75),Math.min(pageTexts[p].length,m.index+term.length+105)),
