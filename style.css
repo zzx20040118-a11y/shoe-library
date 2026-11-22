@@ -645,3 +645,28 @@ h1,h2,h3,.stack-copy strong,.cover strong,.brand,.prose{ text-shadow:none!import
  .spread h1{font-size:29px!important}
  .stack .cover{flex-basis:64px!important;width:64px!important}
 }
+
+
+/* Map place details: keep the selected book card clear of the top search controls. */
+.explore-map .map-story{
+  position:absolute!important;
+  z-index:5!important;
+  left:16px!important;
+  top:auto!important;
+  bottom:20px!important;
+  box-sizing:border-box!important;
+  width:min(465px,calc(100% - 32px))!important;
+  max-height:calc(100% - 110px)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+}
+.explore-map .map-story>div{min-width:0;flex:1}
+.explore-map .map-story .map-story-close{z-index:1}
+@media(max-width:650px){
+  .explore-map .map-story{
+    left:12px!important;
+    bottom:16px!important;
+    width:calc(100% - 24px)!important;
+    max-height:min(55%,420px)!important;
+  }
+}
