@@ -16,7 +16,12 @@ const clean=s=>decode(s.replace(/<br\s*\/?>/gi,'\n').replace(/<sup\b[^>]*>[\s\S]
  .replace(/[ \t]+/g,' ').replace(/ *\n */g,'\n').trim());
 async function fetchHtml(page){
  const url='https://zh.wikisource.org/w/api.php?'+new URLSearchParams({action:'parse',page,prop:'text',format:'json',variant:'zh-hans',disableeditsection:'1',redirects:'1'});
- const res=await fetch(url,{headers:{'User-Agent':'SHOE-LiteraryAtlas/1.0 (noncommercial literary research; source Wikimedia)'},signal:AbortSignal.timeout(25000)});
+ let res;
+ for(let attempt=0;attempt<6;attempt++){
+   await new Promise(resolve=>setTimeout(resolve,attempt===0?1800:Math.min(40000,6000*2**attempt)));
+   res=await fetch(url,{headers:{'User-Agent':'SHOE-LiteraryAtlas/1.0 (noncommercial literary research; source Wikimedia)'},signal:AbortSignal.timeout(25000)});
+   if(res.status!==429&&res.status<500)break;
+ }
  if(!res.ok)throw Error('Wikisource HTTP '+res.status+' for '+page);
  const json=await res.json();
  if(json.error||!json.parse?.text?.['*'])throw Error('Missing Wikisource content '+page+': '+JSON.stringify(json.error||{}));
