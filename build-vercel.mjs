@@ -1,6 +1,6 @@
 import {mkdir,copyFile} from 'node:fs/promises';
 await mkdir('public',{recursive:true});
-for(const file of ['index.html','app.js','books.js','catalog.js','legacy.js','fusheng.js','account-data.js','account-ui.js','landscape.js','style.css']){
+for(const file of ['index.html','app.js','books.js','account-data.js','account-ui.js','landscape.js','style.css']){
   await copyFile(file,'public/'+file);
 }
 
