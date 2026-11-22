@@ -16,7 +16,7 @@ const decode=s=>s.replace(/&#(x[\da-f]+|\d+);/gi,(_,n)=>String.fromCodePoint(n[0
 .replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');
 const plain=s=>decode(s.replace(/<br\s*\/?\s*>/gi,' ').replace(/<[^>]*>/g,' ').replace(/[\r\n]+/g,' ').replace(/[ \t\u00a0]+/g,' ').trim());
 const blocks=[];
-const tokens=body.split(/(<center>\s*<h3>[\s\S]*?<\/h3>\s*<\/center>|<p\b[^>]*>)/gi);
+const tokens=body.split(/(<h3>[\s\S]*?<\/h3>|<p\b[^>]*>)/gi);
 let kind='text';
 for(const token of tokens){
  if(!token)continue;
