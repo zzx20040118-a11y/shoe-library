@@ -13,7 +13,12 @@ const londonClassics=[
  {id:'pg883',title:'我们共同的朋友',author:'Charles Dickens',en:'OUR MUTUAL FRIEND',edition:'Project Gutenberg · 英文原版',col:'blue',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://www.gutenberg.org/ebooks/883'},
  {id:'pg700',title:'老古玩店',author:'Charles Dickens',en:'THE OLD CURIOSITY SHOP',edition:'Project Gutenberg · 英文原版',col:'brown',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://www.gutenberg.org/ebooks/700'}
 ];
-export const books=[sherlock,...dickens,...londonClassics];
+const chineseClassics=[
+ {id:'zh-chaohua',title:'朝花夕拾',author:'鲁迅',en:'DAWN BLOSSOMS PLUCKED AT DUSK',edition:'维基文库 · 中文原著 · 公有领域',lang:'中文',col:'green',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://zh.wikisource.org/wiki/朝花夕拾'},
+ {id:'zh-chunfeng',title:'春风沉醉的晚上',author:'郁达夫',en:'A NIGHT OF INTOXICATING SPRING BREEZE',edition:'维基文库 · 中文原著 · 公有领域',lang:'中文',col:'brown',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://zh.wikisource.org/wiki/春風沉醉的晚上'},
+ {id:'zh-qinhuai',title:'桨声灯影里的秦淮河',author:'朱自清',en:'QINHUAI RIVER',edition:'维基文库 · 中文原著 · 公有领域',lang:'中文',col:'blue',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://zh.wikisource.org/wiki/槳聲燈影裏的秦淮河'}
+];
+export const books=[...chineseClassics,sherlock,...dickens,...londonClassics];
 export const allBooks=books;
 export const anchors=[];
 export const pagesOrigin='https://zzx20040118-a11y.github.io';
