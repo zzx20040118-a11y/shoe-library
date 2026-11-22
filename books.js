@@ -1,3 +1,4 @@
+import {approvedPlaceReviews} from './account-data.js';
 // SHOE pilot: a newly imported public-domain edition. Old catalog and indices are not loaded.
 const sherlock={id:'pg1661',title:'福尔摩斯探案集',author:'Arthur Conan Doyle',en:'THE ADVENTURES OF SHERLOCK HOLMES',edition:'Project Gutenberg · 英文原版 · 测试版',col:'blue',art:'window',pages:['正在加载正文…'],count:1,anchors:[],place:'',city:'',featured:0,source:'https://www.gutenberg.org/ebooks/1661',pilot:true};
 const dickens=[
@@ -34,7 +35,16 @@ export async function loadBook(book){
   book.pages=data.pages;
   book.blocks=data.blocks||null;
   book.count=data.pages.length;
-  book.anchors=(data.locations||[]).filter(x=>x.mapEligible&&x.reviewStatus==='approved').map((x,i)=>({...x,id:book.id+'-'+i,bookId:book.id,region:'欧洲',keywords:x.city}));
+  const base=(data.locations||[]).filter(x=>x.mapEligible&&x.reviewStatus==='approved').map((x,i)=>({...x,id:book.id+'-'+i,bookId:book.id,region:'欧洲',keywords:x.city}));
+  let reviewed=[];
+  try{reviewed=await approvedPlaceReviews(book.id)}catch(err){console.warn('Could not load community-verified locations',err)}
+  const fromAdmin=reviewed.filter(x=>book.pages[x.page]?.slice(x.at_offset,x.at_offset+x.term.length)===x.term).map(x=>({
+   id:book.id+'-review-'+x.id,bookId:book.id,term:x.term,place:x.place_name,city:x.city||'',
+   page:x.page,at:x.at_offset,lat:x.lat,lon:x.lon,relationType:x.relation_type,
+   reviewStatus:'approved',mapEligible:true,region:'亚洲',keywords:x.city||'',snippet:book.pages[x.page].slice(Math.max(0,x.at_offset-45),x.at_offset+x.term.length+80)
+  }));
+  const replaced=new Set(fromAdmin.map(x=>[x.page,x.at,x.term].join(':')));
+  book.anchors=[...base.filter(x=>!replaced.has([x.page,x.at,x.term].join(':'))),...fromAdmin];
   anchors.splice(0,anchors.length,...books.flatMap(b=>b.anchors||[]));
   book.loaded=true;
  })().finally(()=>pending.delete(book.id)));
