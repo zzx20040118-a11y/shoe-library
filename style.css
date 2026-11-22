@@ -449,3 +449,28 @@ h1,h2,h3,.stack-copy strong,.cover strong,.brand,.prose{ text-shadow:none!import
  .spread>div:first-child{width:100%}
  .spread h1{font-size:clamp(35px,9vw,54px)}
 }
+
+
+/* Compact original mountain print: free-standing, without frame or caption. */
+.spread{
+ display:grid!important;grid-template-columns:1fr 1fr!important;gap:6%!important;
+ align-items:center!important;min-height:0!important;
+ margin:0!important;padding:48px 0!important;
+ background:transparent!important;border:0!important;
+}
+.spread>div:first-child{width:auto!important;max-width:none!important}
+.spread:before,.spread:after{display:none!important}
+.landprint{
+ display:block!important;position:relative;overflow:visible!important;
+ margin:0!important;padding:0!important;
+ background:transparent!important;border:0!important;border-radius:0!important;
+ box-shadow:none!important;transform:none!important;
+}
+.landprint:before,.landprint:after{display:none!important}
+.landprint canvas{display:block;width:100%;height:auto;border:0!important;border-radius:0!important;box-shadow:none!important;clip-path:none!important}
+.landprint figcaption{display:none!important}
+@media(max-width:800px){.spread{grid-template-columns:1fr 1fr!important;gap:4%!important;padding:40px 0!important}}
+@media(max-width:650px){
+ .spread{display:grid!important;grid-template-columns:1fr!important;gap:20px!important;padding:30px 0!important}
+ .landprint{width:100%;max-width:520px;margin:auto!important}
+}
