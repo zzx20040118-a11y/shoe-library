@@ -25,6 +25,16 @@ let user = null;
 let query = '';
 let region = '全部';
 let mapState;
+let mapFocus='walkable';
+// Broad administrative and landscape names remain searchable but are not walkable street pins.
+const broadMapPlaces=new Set(['伦敦','巴黎','罗马','楠塔基特岛','佛罗伦萨','莫斯科','波士顿','威尼斯','扬州','马德里','圣彼得堡','爱丁堡','维也纳','多佛','柏林','苏州','金陵','钱塘','都柏林','纽约','钱塘江','西湖','泰山','赤壁']);
+const walkableAnchor=a=>!broadMapPlaces.has(a.place)&&!broadMapPlaces.has(a.term)&&Number.isFinite(a.lat)&&Number.isFinite(a.lon);
+const literaryEvidence={
+  '贝克街':{kind:'原文街道',source:'https://www.arthur-conan-doyle.com/index.php/221B_Baker_Street',note:'文学中的具体街道；人物住所的门牌与现实地点须分别考证。'},
+  '伦敦塔':{kind:'历史建筑',source:'https://www.hrp.org.uk/tower-of-london/',note:'现实建筑地点；具体文学情节请以所关联的原文为准。'},
+  '巴黎圣母院':{kind:'现实建筑',source:'https://www.notredamedeparis.fr/',note:'真实建筑，小说中的事件与现实历史需区分。'},
+  '奥康奈尔桥':{kind:'现实桥梁',source:'https://www.openstreetmap.org/search?query=O%27Connell%20Bridge%20Dublin',note:'可步行桥梁；地点与文学叙述之间以原文为准。'}
+};
 let locating = false;
 let locationMessage = '';
 let selection;
@@ -192,8 +202,10 @@ function route() {
 let locationAttempted=false;
 function explore(){
   if(!mapState)mapState={center:{lat:30.25,lon:120.14},zoom:5,selected:null};
-  app.innerHTML=`<section class="explore-page"><header class="explore-head"><div><small>SHOE / CITY NOTES</small><h1>探索身边</h1></div><a class="btn" href="#discover">返回发现</a></header><div class="explore-map-shell"><div id="map" class="map explore-map" aria-label="文学地点地图"></div><div class="explore-controls"><button class="btn" id="recenter" ${locating?'disabled':''}>${icon('locate')} ${locating?'定位中…':'回到我的位置'}</button><form id="place-search"><input name="place" aria-label="搜索城市或地点" placeholder="搜索城市或地点" required><button class="btn">查找</button></form></div>${locationMessage?'<p class="explore-message" role="status">'+esc(locationMessage)+'</p>':''}</div></section>`;
-  mapObserver=new ResizeObserver(renderMap);mapObserver.observe(app.querySelector('#map'));renderMap();
+  app.innerHTML=`<section class="explore-page"><header class="explore-head"><div><small>SHOE / CITY NOTES</small><h1>走进书里的街道</h1><p class="explore-intro">优先发现可以亲自走到的街道、建筑与文学旧址。城市级线索可切换查看。</p></div><a class="btn" href="#discover">返回发现</a></header><div class="explore-filter" role="group" aria-label="地图地点类型"><button class="btn" id="walkable-filter" aria-pressed="${mapFocus==='walkable'}">步行地点优先</button><button class="btn" id="all-filter" aria-pressed="${mapFocus==='all'}">全部地点</button><span id="place-count" aria-live="polite"></span></div><div class="explore-map-shell"><div id="map" class="map explore-map" aria-label="文学地点地图"></div><div class="explore-controls"><button class="btn" id="recenter" ${locating?'disabled':''}>${icon('locate')} ${locating?'定位中…':'回到我的位置'}</button><form id="place-search"><input name="place" aria-label="搜索城市或地点" placeholder="搜索城市或地点" required><button class="btn">查找</button></form></div>${locationMessage?'<p class="explore-message" role="status">'+esc(locationMessage)+'</p>':''}</div></section>`;
+  mapObserver?.disconnect();mapObserver=new ResizeObserver(renderMap);mapObserver.observe(app.querySelector('#map'));renderMap();
+  app.querySelector('#walkable-filter').onclick=()=>{mapFocus='walkable';explore()};
+  app.querySelector('#all-filter').onclick=()=>{mapFocus='all';explore()};
   app.querySelector('#recenter').onclick=()=>locate(true);
   app.querySelector('#place-search').onsubmit=e=>{
     e.preventDefault();const q=new FormData(e.currentTarget).get('place').trim().toLowerCase();
@@ -231,7 +243,9 @@ function renderMap(){
   const {center,zoom}=mapState,[cx,cy]=project(center,zoom),w=t.clientWidth,h=t.clientHeight,n=2**zoom,x0=cx-w/2,y0=cy-h/2;
   let html='';for(let x=Math.floor(x0/256);x<=Math.floor((x0+w)/256);x++)for(let y=Math.max(0,Math.floor(y0/256));y<=Math.min(n-1,Math.floor((y0+h)/256));y++)html+='<img draggable="false" alt="" width="256" height="256" src="https://tile.openstreetmap.org/'+zoom+'/'+((x%n+n)%n)+'/'+y+'.png" style="left:'+(x*256-x0)+'px;top:'+(y*256-y0)+'px">';
   const groups=[];
-  for(const a of anchors){
+  const visibleAnchors=mapFocus==='walkable'?anchors.filter(walkableAnchor):anchors;
+  const countNode=app.querySelector('#place-count');if(countNode)countNode.textContent='当前模式：'+new Set(visibleAnchors.map(a=>a.city+'|'+a.place)).size+' 处已索引地点（非完整考证）';
+  for(const a of visibleAnchors){
     const [px,py]=project(a,zoom),x=px-x0,y=py-y0;
     if(x<0||y<0||x>w||y>h)continue;
     let g=groups.find(g=>Math.abs(g.x-x)<43&&Math.abs(g.y-y)<55);
@@ -240,7 +254,7 @@ function renderMap(){
   groups.forEach((g,i)=>{const b=getBook(g.items[0].bookId);html+='<button class="map-cover" data-group="'+i+'" aria-label="'+esc(g.items[0].place+'，'+b.title)+'" style="left:'+g.x+'px;top:'+g.y+'px">'+cover(b)+(g.items.length>1?'<b>'+g.items.length+'</b>':'')+'</button>';});
   if(mapState.user){const [x,y]=project(mapState.user,zoom);html+='<i class="here" title="你的位置" style="left:'+(x-x0)+'px;top:'+(y-y0)+'px"></i>'}
   const g=groups.find(g=>g.items.some(a=>a.id===mapState.selected)),i=g?.items.findIndex(a=>a.id===mapState.selected),a=g?.items[i];
-  if(a){const b=getBook(a.bookId),line=excerpt(b,a.page,a.term,a.snippet);html+='<aside class="map-story">'+cover(b)+'<div><small>'+esc(a.city+' · '+a.place)+'</small><h3>'+esc(b.title)+'</h3><small>'+esc(b.author)+'</small><p>'+paint(line,textRanges(line,a.term))+'</p><a href="'+esc(readLink(b,a.page,a.term,a.place))+'">阅读原文</a> '+(g.items.length>1?'<button data-cycle>下一段 '+(i+1)+' / '+g.items.length+'</button>':'')+' <button data-dismiss>收起</button></div></aside>'}
+  if(a){const b=getBook(a.bookId),line=excerpt(b,a.page,a.term,a.snippet);const evidence=literaryEvidence[a.place];html+='<aside class="map-story">'+cover(b)+'<div><small>'+esc(a.city+' · '+a.place)+'</small><h3>'+esc(b.title)+'</h3><small>'+esc(b.author)+'</small><p>'+paint(line,textRanges(line,a.term))+'</p><p class="place-evidence"><strong>'+(evidence?esc(evidence.kind):'原文地点索引 · 待考证')+'</strong> · '+(evidence?esc(evidence.note):'现有坐标来自旧索引，尚未逐条核验历史位置或文学原型。')+'</p>'+(evidence?'<a href="'+esc(evidence.source)+'" target="_blank" rel="noopener noreferrer">地点资料 ↗</a> ':'')+'<a href="'+esc(readLink(b,a.page,a.term,a.place))+'">阅读原文</a> '+(g.items.length>1?'<button data-cycle>下一段 '+(i+1)+' / '+g.items.length+'</button>':'')+' <button data-dismiss>收起</button></div></aside>'}
   t.innerHTML=html+'<div class="map-tools"><button data-zoom="1" aria-label="放大">+</button><button data-zoom="-1" aria-label="缩小">−</button></div><span class="map-note"><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a></span>';
   t.onclick=e=>{const b=e.target.closest('button');if(!b)return;
     if(b.hasAttribute('data-group'))mapState.selected=groups[Number(b.dataset.group)].items[0].id;
