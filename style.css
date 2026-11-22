@@ -89,3 +89,8 @@ body:not(:has(.reader)){background:#f3ecdc}
 .place-report-dialog select,.place-report-dialog textarea{font:inherit;background:#fffdf8;border:1px solid #c9c8b8;padding:10px;border-radius:4px;width:100%;box-sizing:border-box}
 .place-report-dialog textarea{min-height:110px;resize:vertical}
 .place-report-dialog .dialog-x{position:absolute;right:12px;top:10px;background:transparent;border:0;font-size:26px;cursor:pointer}
+
+/* Novel reading: real paragraphs, not raw Gutenberg line wrapping. */
+.prose{white-space:normal;line-height:1.85}
+.prose .novel-paragraph{margin:0 0 1.05em;text-indent:0;white-space:normal}
+.prose .novel-paragraph:last-child{margin-bottom:0}
