@@ -25,16 +25,13 @@ let user = null;
 let query = '';
 let region = '全部';
 let mapState;
-let mapFocus='walkable';
 // Broad administrative and landscape names remain searchable but are not walkable street pins.
 const broadMapPlaces=new Set(['伦敦','巴黎','罗马','楠塔基特岛','佛罗伦萨','莫斯科','波士顿','威尼斯','扬州','马德里','圣彼得堡','爱丁堡','维也纳','多佛','柏林','苏州','金陵','钱塘','都柏林','纽约','钱塘江','西湖','泰山','赤壁']);
 const walkableAnchor=a=>!broadMapPlaces.has(a.place)&&!broadMapPlaces.has(a.term)&&Number.isFinite(a.lat)&&Number.isFinite(a.lon);
-const literaryEvidence={
-  '贝克街':{kind:'原文街道',source:'https://www.arthur-conan-doyle.com/index.php/221B_Baker_Street',note:'文学中的具体街道；人物住所的门牌与现实地点须分别考证。'},
-  '伦敦塔':{kind:'历史建筑',source:'https://www.hrp.org.uk/tower-of-london/',note:'现实建筑地点；具体文学情节请以所关联的原文为准。'},
-  '巴黎圣母院':{kind:'现实建筑',source:'https://www.notredamedeparis.fr/',note:'真实建筑，小说中的事件与现实历史需区分。'},
-  '奥康奈尔桥':{kind:'现实桥梁',source:'https://www.openstreetmap.org/search?query=O%27Connell%20Bridge%20Dublin',note:'可步行桥梁；地点与文学叙述之间以原文为准。'}
-};
+const placeKind=a=>a.relationType==='prototype'?'prototype':'direct';
+const placeKindLabel=a=>placeKind(a)==='prototype'?'现实原型':'原文地点';
+const placeKindIcon=a=>placeKind(a)==='prototype'?'◇':'●';
+
 let locating = false;
 let locationMessage = '';
 let selection;
@@ -202,15 +199,14 @@ function route() {
 let locationAttempted=false;
 function explore(){
   if(!mapState)mapState={center:{lat:30.25,lon:120.14},zoom:5,selected:null};
-  app.innerHTML=`<section class="explore-page"><header class="explore-head"><div><small>SHOE / CITY NOTES</small><h1>走进书里的街道</h1><p class="explore-intro">优先发现可以亲自走到的街道、建筑与文学旧址。城市级线索可切换查看。</p></div><a class="btn" href="#discover">返回发现</a></header><div class="explore-filter" role="group" aria-label="地图地点类型"><button class="btn" id="walkable-filter" aria-pressed="${mapFocus==='walkable'}">步行地点优先</button><button class="btn" id="all-filter" aria-pressed="${mapFocus==='all'}">全部地点</button><span id="place-count" aria-live="polite"></span></div><div class="explore-map-shell"><div id="map" class="map explore-map" aria-label="文学地点地图"></div><div class="explore-controls"><button class="btn" id="recenter" ${locating?'disabled':''}>${icon('locate')} ${locating?'定位中…':'回到我的位置'}</button><form id="place-search"><input name="place" aria-label="搜索城市或地点" placeholder="搜索城市或地点" required><button class="btn">查找</button></form></div>${locationMessage?'<p class="explore-message" role="status">'+esc(locationMessage)+'</p>':''}</div></section>`;
+  app.innerHTML=`<section class="explore-page"><header class="explore-head"><div><small>SHOE / CITY NOTES</small><h1>走进书里的街道</h1><p class="explore-intro">从书页走向街道、桥梁与建筑。</p></div><a class="btn" href="#discover">返回发现</a></header><div class="explore-map-shell"><div id="map" class="map explore-map" aria-label="文学地点地图"></div><div class="explore-controls"><button class="btn" id="recenter" ${locating?'disabled':''}>${icon('locate')} ${locating?'定位中…':'回到我的位置'}</button><form id="place-search"><input name="place" aria-label="搜索城市或地点" placeholder="搜索城市或地点" required><button class="btn">查找</button></form></div>${locationMessage?'<p class="explore-message" role="status">'+esc(locationMessage)+'</p>':''}</div></section>`;
   mapObserver?.disconnect();mapObserver=new ResizeObserver(renderMap);mapObserver.observe(app.querySelector('#map'));renderMap();
-  app.querySelector('#walkable-filter').onclick=()=>{mapFocus='walkable';explore()};
-  app.querySelector('#all-filter').onclick=()=>{mapFocus='all';explore()};
   app.querySelector('#recenter').onclick=()=>locate(true);
   app.querySelector('#place-search').onsubmit=e=>{
     e.preventDefault();const q=new FormData(e.currentTarget).get('place').trim().toLowerCase();
-    const match=anchors.find(a=>[a.city,a.place].some(v=>v?.toLowerCase().includes(q)));
-    if(match){mapState.center={lat:match.lat,lon:match.lon};mapState.zoom=14;mapState.selected=null;locationMessage='';explore();}
+    const found=anchors.filter(a=>walkableAnchor(a)&&[a.city,a.place].some(v=>v?.toLowerCase().includes(q)));
+    const match=found[0];
+    if(match){mapState.center={lat:match.lat,lon:match.lon};mapState.zoom=14;mapState.selected=null;locationMessage=found.length+' 条文学地点记录匹配「'+q+'」，地图已定位至其中一处。';explore();}
     else{locationMessage='尚未收录这个地点，请试试已收录的城市或地名。';explore();}
   };
   if(!mapState.user&&!locating&&!locationAttempted)locate(false);
@@ -243,8 +239,7 @@ function renderMap(){
   const {center,zoom}=mapState,[cx,cy]=project(center,zoom),w=t.clientWidth,h=t.clientHeight,n=2**zoom,x0=cx-w/2,y0=cy-h/2;
   let html='';for(let x=Math.floor(x0/256);x<=Math.floor((x0+w)/256);x++)for(let y=Math.max(0,Math.floor(y0/256));y<=Math.min(n-1,Math.floor((y0+h)/256));y++)html+='<img draggable="false" alt="" width="256" height="256" src="https://tile.openstreetmap.org/'+zoom+'/'+((x%n+n)%n)+'/'+y+'.png" style="left:'+(x*256-x0)+'px;top:'+(y*256-y0)+'px">';
   const groups=[];
-  const visibleAnchors=mapFocus==='walkable'?anchors.filter(walkableAnchor):anchors;
-  const countNode=app.querySelector('#place-count');if(countNode)countNode.textContent='当前模式：'+new Set(visibleAnchors.map(a=>a.city+'|'+a.place)).size+' 处已索引地点（非完整考证）';
+  const visibleAnchors=anchors.filter(walkableAnchor);
   for(const a of visibleAnchors){
     const [px,py]=project(a,zoom),x=px-x0,y=py-y0;
     if(x<0||y<0||x>w||y>h)continue;
@@ -254,16 +249,31 @@ function renderMap(){
   groups.forEach((g,i)=>{const b=getBook(g.items[0].bookId);html+='<button class="map-cover" data-group="'+i+'" aria-label="'+esc(g.items[0].place+'，'+b.title)+'" style="left:'+g.x+'px;top:'+g.y+'px">'+cover(b)+(g.items.length>1?'<b>'+g.items.length+'</b>':'')+'</button>';});
   if(mapState.user){const [x,y]=project(mapState.user,zoom);html+='<i class="here" title="你的位置" style="left:'+(x-x0)+'px;top:'+(y-y0)+'px"></i>'}
   const g=groups.find(g=>g.items.some(a=>a.id===mapState.selected)),i=g?.items.findIndex(a=>a.id===mapState.selected),a=g?.items[i];
-  if(a){const b=getBook(a.bookId),line=excerpt(b,a.page,a.term,a.snippet);const evidence=literaryEvidence[a.place];html+='<aside class="map-story">'+cover(b)+'<div><small>'+esc(a.city+' · '+a.place)+'</small><h3>'+esc(b.title)+'</h3><small>'+esc(b.author)+'</small><p>'+paint(line,textRanges(line,a.term))+'</p><p class="place-evidence"><strong>'+(evidence?esc(evidence.kind):'原文地点索引 · 待考证')+'</strong> · '+(evidence?esc(evidence.note):'现有坐标来自旧索引，尚未逐条核验历史位置或文学原型。')+'</p>'+(evidence?'<a href="'+esc(evidence.source)+'" target="_blank" rel="noopener noreferrer">地点资料 ↗</a> ':'')+'<a href="'+esc(readLink(b,a.page,a.term,a.place))+'">阅读原文</a> '+(g.items.length>1?'<button data-cycle>下一段 '+(i+1)+' / '+g.items.length+'</button>':'')+' <button data-dismiss>收起</button></div></aside>'}
+  if(a){const b=getBook(a.bookId),line=excerpt(b,a.page,a.term,a.snippet);html+='<aside class="map-story">'+cover(b)+'<div><small>'+esc(a.city+' · '+a.place)+'</small><h3>'+esc(b.title)+'</h3><small>'+esc(b.author)+'</small><p>'+paint(line,textRanges(line,a.term))+'</p><p class="place-kind" title="'+esc(placeKindLabel(a))+'"><span aria-hidden="true">'+placeKindIcon(a)+'</span> '+placeKindLabel(a)+'</p><div class="place-actions"><a href="'+esc(readLink(b,a.page,a.term,a.place))+'">阅读原文</a> '+(g.items.length>1?'<button data-cycle>下一段 '+(i+1)+' / '+g.items.length+'</button>':'')+'<button data-report>举报错误</button></div></div><button class="map-story-close" data-dismiss aria-label="关闭">×</button></aside>'}
+
   t.innerHTML=html+'<div class="map-tools"><button data-zoom="1" aria-label="放大">+</button><button data-zoom="-1" aria-label="缩小">−</button></div><span class="map-note"><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a></span>';
   t.onclick=e=>{const b=e.target.closest('button');if(!b)return;
     if(b.hasAttribute('data-group'))mapState.selected=groups[Number(b.dataset.group)].items[0].id;
     if(b.hasAttribute('data-cycle'))mapState.selected=g.items[(i+1)%g.items.length].id;
     if(b.hasAttribute('data-dismiss'))mapState.selected=null;
+    if(b.hasAttribute('data-report')&&a)reportPlace(a,getBook(a.bookId));
     if(b.dataset.zoom)mapState.zoom=Math.max(2,Math.min(18,zoom+Number(b.dataset.zoom)));
     renderMap();};
   t.onpointerdown=e=>{if(e.target.closest('button,a,aside'))return;const sx=e.clientX,sy=e.clientY;t.setPointerCapture(e.pointerId);t.onpointermove=p=>{mapState.center=unproject(cx+sx-p.clientX,cy+sy-p.clientY,zoom);mapState.selected=null;renderMap()};};
   t.onpointerup=t.onpointercancel=()=>{t.onpointermove=null};
+}
+
+function reportPlace(a,book){
+  const dialog=document.createElement('dialog');dialog.className='place-report-dialog';
+  dialog.innerHTML='<form method="dialog"><button class="dialog-x" value="cancel" aria-label="关闭">×</button><small>SHOE / CORRECTIONS</small><h2>举报地点错误</h2><p>'+esc(book.title)+' · '+esc(a.place)+'</p><label>问题类型<select name="reason"><option>地点位置有误</option><option>文学对应关系有误</option><option>原文摘录有误</option><option>其他问题</option></select></label><label>补充说明<textarea name="detail" maxlength="1200" placeholder="告诉我们哪里需要修正" required></textarea></label><div class="actions"><button class="btn solid" value="send">提交反馈</button></div></form>';
+  app.append(dialog);dialog.showModal();dialog.onclose=()=>{
+    if(dialog.returnValue==='send'){
+      const f=new FormData(dialog.querySelector('form'));
+      const body='书籍：'+book.title+' ('+book.id+')\\n地点：'+a.place+' ('+a.id+')\\n问题：'+f.get('reason')+'\\n说明：'+f.get('detail');
+      if(String(f.get('detail')||'').trim())window.open('https://github.com/zzx20040118-a11y/shoe-library/issues/new?title='+encodeURIComponent('地点纠错：'+a.place)+'&body='+encodeURIComponent(body),'_blank','noopener');
+    }
+    dialog.remove();
+  };
 }
 
 function craftsFor(book, page) {
@@ -318,10 +328,8 @@ function linkedText(text, ranges, places) {
 function openCommunity(a,book) {
   const dialog = document.createElement('dialog');
   dialog.className = 'place-dialog';
-  dialog.innerHTML = `<div class="section-head"><div><p class="sub">《${esc(book.title)}》 · 第 ${a.page+1} 页</p><h2>${esc(a.term)}的读者书签</h2></div><button class="btn" data-close>关闭</button></div>
-  <p>原文「${esc(a.term)}」对应今天的${esc(a.city)} · ${esc(a.place)}。</p>
-  <p class="sub">地图参考点 ${a.lat.toFixed(3)}° N，${a.lon.toFixed(3)}° E · ${esc(a.keywords)}</p>
-  <div class="actions"><a class="btn" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lon}#map=15/${a.lat}/${a.lon}">查看地图</a>
+  dialog.innerHTML = `<div class="section-head"><div><p class="sub">《${esc(book.title)}》 · 第 ${a.page+1} 页</p><h2>${esc(a.term)}的读者书签</h2></div><button class="dialog-x" data-close aria-label="关闭">×</button></div>
+  <p class="place-kind"><span aria-hidden="true">${placeKindIcon(a)}</span> ${placeKindLabel(a)}</p>\n  <div class="actions"><a class="btn" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lon}#map=15/${a.lat}/${a.lon}">查看地图</a>
   <a class="btn solid" href="${studioLink(book,a.page,'bookmark')}&anchor=${a.id}">为此处制作书签</a></div>
   <div class="collections" data-cards></div><p role="status" class="sub" data-status></p><button class="btn" data-more hidden>加载更多</button>`;
   app.append(dialog);
