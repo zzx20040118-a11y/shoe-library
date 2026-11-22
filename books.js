@@ -1,4 +1,4 @@
-import {approvedPlaceReviews} from './account-data.js';
+import {approvedPlaceReviews,additionalPlaceLocations} from './account-data.js';
 // SHOE pilot: a newly imported public-domain edition. Old catalog and indices are not loaded.
 const sherlock={id:'pg1661',title:'福尔摩斯探案集',author:'Arthur Conan Doyle',en:'THE ADVENTURES OF SHERLOCK HOLMES',edition:'Project Gutenberg · 英文原版 · 测试版',col:'blue',art:'window',pages:['正在加载正文…'],count:1,anchors:[],place:'',city:'',featured:0,source:'https://www.gutenberg.org/ebooks/1661',pilot:true};
 const dickens=[
@@ -37,14 +37,16 @@ export async function loadBook(book){
   book.count=data.pages.length;
   const base=(data.locations||[]).filter(x=>x.mapEligible&&x.reviewStatus==='approved').map((x,i)=>({...x,id:book.id+'-'+i,bookId:book.id,region:'欧洲',keywords:x.city}));
   let reviewed=[];
-  try{reviewed=await approvedPlaceReviews(book.id)}catch(err){console.warn('Could not load community-verified locations',err)}
+  let extra=[];
+  try{[reviewed,extra]=await Promise.all([approvedPlaceReviews(book.id),additionalPlaceLocations(book.id)])}catch(err){console.warn('Could not load community-verified locations',err)}
   const fromAdmin=reviewed.filter(x=>book.pages[x.page]?.slice(x.at_offset,x.at_offset+x.term.length)===x.term).map(x=>({
    id:book.id+'-review-'+x.id,bookId:book.id,term:x.term,place:x.place_name,city:x.city||'',
    page:x.page,at:x.at_offset,lat:x.lat,lon:x.lon,relationType:x.relation_type,
-   reviewStatus:'approved',mapEligible:true,region:'亚洲',keywords:x.city||'',snippet:book.pages[x.page].slice(Math.max(0,x.at_offset-45),x.at_offset+x.term.length+80)
+   reviewStatus:'approved',mapEligible:true,region:'亚洲',keywords:x.city||'',note:x.note||'',coordinatePrecision:x.coordinate_precision||'exact',snippet:book.pages[x.page].slice(Math.max(0,x.at_offset-45),x.at_offset+x.term.length+80)
   }));
+  const extraAnchors=extra.flatMap(x=>{const parent=reviewed.find(p=>p.id===x.review_id);if(!parent||book.pages[parent.page]?.slice(parent.at_offset,parent.at_offset+parent.term.length)!==parent.term)return [];return [{id:book.id+'-review-extra-'+x.id,bookId:book.id,term:parent.term,place:x.place_name,city:x.city||'',page:parent.page,at:parent.at_offset,lat:x.lat,lon:x.lon,relationType:x.relation_type,reviewStatus:'approved',mapEligible:true,region:'亚洲',keywords:x.city||'',note:x.note||'',coordinatePrecision:x.coordinate_precision||'exact',snippet:book.pages[parent.page].slice(Math.max(0,parent.at_offset-45),parent.at_offset+parent.term.length+80)}]});
   const replaced=new Set(fromAdmin.map(x=>[x.page,x.at,x.term].join(':')));
-  book.anchors=[...base.filter(x=>!replaced.has([x.page,x.at,x.term].join(':'))),...fromAdmin];
+  book.anchors=[...base.filter(x=>!replaced.has([x.page,x.at,x.term].join(':'))),...fromAdmin,...extraAnchors];
   anchors.splice(0,anchors.length,...books.flatMap(b=>b.anchors||[]));
   book.loaded=true;
  })().finally(()=>pending.delete(book.id)));
