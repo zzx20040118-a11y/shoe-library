@@ -670,3 +670,15 @@ h1,h2,h3,.stack-copy strong,.cover strong,.brand,.prose{ text-shadow:none!import
     max-height:min(55%,420px)!important;
   }
 }
+
+/* Administrator-only literary location review */
+.place-review{max-width:850px;margin:36px auto;padding-bottom:80px}
+.place-review>label{display:flex;gap:12px;align-items:center;margin:18px 0}
+.place-review-card{padding:20px;margin:16px 0;border:1px solid #d7cfbc;border-radius:14px;background:#faf7ed}
+.place-review-card form{display:grid;gap:12px}
+.place-review-card label{display:grid;gap:5px}
+.place-review-card input,.place-review-card select,.place-review-card textarea,.place-review>label select{width:100%;max-width:100%;box-sizing:border-box;padding:9px;border:1px solid #bdb39f;border-radius:6px;background:#fffdf7;color:#333;font:inherit}
+.place-review-card blockquote{margin:0;padding:12px;border-left:3px solid #8d9b7c;background:#f2efe4;white-space:pre-wrap;overflow-wrap:anywhere}
+.place-fields{display:grid;gap:12px}
+.place-review-card [role=status]{display:block;color:#995b38}
+@media(min-width:650px){.place-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.place-fields label:last-child{grid-column:1/-1}}
