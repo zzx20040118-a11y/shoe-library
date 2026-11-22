@@ -23,7 +23,7 @@ for(const token of tokens){
  if(/^<p\b/i.test(token)){kind='p';continue}
  if(/^<center>\s*<h3>/i.test(token)){
    const title=plain(token);
-   if(/^ADVENTURE\s+[IVX]+\./i.test(title))blocks.push({kind:'chapter',text:title});
+   if(/^(?:ADVENTURE\s+)?[IVX]+\./i.test(title))blocks.push({kind:'chapter',text:title});
    kind='text';continue;
  }
  const text=plain(token);
