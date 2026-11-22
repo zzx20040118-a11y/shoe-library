@@ -56,7 +56,7 @@ for(const work of works){
  let blocks=[],sources=[];
  if(work.chapters){
   for(const name of work.chapters){
-   const page=work.sourcePage+'/'+name;
+   const page=(name==='小引'||name==='後記')?work.sourcePage+'/'+name:name;
    const source=await fetchHtml(page);
    const chapterBlocks=parseBlocks(source.html);
    if(chapterBlocks.filter(b=>b.kind==='p').length<2)throw Error('Chapter incomplete: '+page);
