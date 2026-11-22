@@ -1,59 +1,56 @@
 #!/usr/bin/env node
+// Import the publisher's structured HTML edition, not hard-wrapped TXT.
+// Preserve each original <p> and chapter heading as a discrete book block.
 import {mkdir,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-const id='pg1661';
-const urls=['https://raw.githubusercontent.com/GITenberg/The-Adventures-of-Sherlock-Holmes_1661/master/1661.txt','https://www.gutenberg.org/cache/epub/1661/pg1661.txt','https://www.gutenberg.org/ebooks/1661.txt.utf-8'];
-let raw='',source='';
-for(const url of urls){try{const r=await fetch(url);if(r.ok){raw=await r.text();source=url;break}}catch(e){console.warn(e.message)}}
-if(!raw)throw Error('Source download failed; no book published');
-const start=raw.search(/\*\*\*\s*START OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[^\n]*\*\*\*/i);
-const end=raw.search(/\*\*\*\s*END OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[^\n]*\*\*\*/i);
-if(start<0||end<=start)throw Error('Gutenberg delimiters missing');
-// Gutenberg plain text uses hard-wrapped print lines, not paragraph breaks.
-// Join soft line wraps within each paragraph, preserve blank-line paragraph breaks.
-const sourceBody=raw.slice(raw.indexOf('\n',start)+1,end).replace(/\r\n?/g,'\n').trim();
-const original=sourceBody.split(/\n[ \t]*\n+/).map(block=>block.split('\n').map(line=>line.trim()).filter(Boolean).join(' ')).join('\n\n');
-if(original.length<100000||!original.includes('Baker Street'))throw Error('Unexpected source text');
-const sha256=s=>createHash('sha256').update(s).digest('hex');
-const headings=[...original.matchAll(/^(?:THE ADVENTURES OF SHERLOCK HOLMES|A SCANDAL IN BOHEMIA|THE RED-HEADED LEAGUE|A CASE OF IDENTITY|THE BOSCOMBE VALLEY MYSTERY|THE FIVE ORANGE PIPS|THE MAN WITH THE TWISTED LIP|THE ADVENTURE OF THE BLUE CARBUNCLE|THE ADVENTURE OF THE SPECKLED BAND|THE ADVENTURE OF THE ENGINEER'S THUMB|THE ADVENTURE OF THE NOBLE BACHELOR|THE ADVENTURE OF THE BERYL CORONET|THE ADVENTURE OF THE COPPER BEECHES)\s*$/gm)].map(m=>({title:m[0],offset:m.index}));
-const target=1500;
-const paragraphs=[...original.matchAll(/\n[ \t]*\n/g)].map(m=>m.index+m[0].length);
-const offsets=[0];let from=0;
-while(from<original.length){
- const ideal=from+target;
- if(ideal>=original.length){offsets.push(original.length);break}
- const min=from+975,max=Math.min(original.length,from+2475);
- const chapter=headings.filter(h=>h.offset>=min&&h.offset<=max);
- let next=chapter.length?chapter.reduce((a,b)=>Math.abs(a.offset-ideal)<Math.abs(b.offset-ideal)?a:b).offset:null;
- if(next===null){const options=paragraphs.filter(x=>x>=min&&x<=max);if(options.length)next=options.reduce((a,b)=>Math.abs(a-ideal)<Math.abs(b-ideal)?a:b)}
- if(next===null){const m=/[.!?][”"')\]]*\s+/.exec(original.slice(ideal));next=m?ideal+m.index+m[0].length:original.length}
- if(next<=from)throw Error('Non advancing pagination');
- offsets.push(next);from=next;
-}
-const pages=offsets.slice(0,-1).map((start,i)=>({start,end:offsets[i+1],text:original.slice(start,offsets[i+1])}));
-if(pages.map(p=>p.text).join('')!==original)throw Error('Lossless QA failed');
-const candidates=[
- ['Baker Street','贝克街','伦敦','direct',51.5237,-0.1585],
- ['Hyde Park','海德公园','伦敦','direct',51.507,-0.166],
- ['Charing Cross','查令十字','伦敦','direct',null,null],
- ['Trafalgar Square','特拉法加广场','伦敦','direct',51.508,-0.1281],
- ['London','伦敦','伦敦','city-context',null,null],
- ['Paris','巴黎','巴黎','city-context',null,null]
-];
-const locations=[];
-for(const [term,place,city,kind,lat,lon] of candidates){
- const re=new RegExp('\\b'+term.replaceAll(' ','\\s+')+'\\b','gi');
- for(const m of original.matchAll(re)){
-  const absolute=m.index;let low=0,high=pages.length-1;
-  while(low<high){const mid=(low+high)>>1;if(absolute>=pages[mid].end)low=mid+1;else high=mid}
-  locations.push({term:m[0],place,city,kind,lat,lon,absolute,page:low,at:absolute-pages[low].start,snippet:original.slice(Math.max(0,absolute-80),Math.min(original.length,absolute+110)),reviewStatus:'pending',mapEligible:false});
+const source='https://raw.githubusercontent.com/GITenberg/The-Adventures-of-Sherlock-Holmes_1661/master/1661-h/1661-h.htm';
+const response=await fetch(source);
+if(!response.ok)throw Error('Structured Gutenberg HTML unavailable: '+response.status);
+const html=await response.text();
+const begin=html.search(/<center>\s*<h3>\s*<a\s+name=["']1["']/i);
+if(begin<0)throw Error('First story heading missing');
+const tail=html.slice(begin);
+const stop=tail.search(/<\/div>\s*<pre>/i);
+const body=stop>0?tail.slice(0,stop):tail;
+const decode=s=>s.replace(/&#(x[\da-f]+|\d+);/gi,(_,n)=>String.fromCodePoint(n[0].toLowerCase()==='x'?parseInt(n.slice(1),16):Number(n)))
+.replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');
+const plain=s=>decode(s.replace(/<br\s*\/?\s*>/gi,' ').replace(/<[^>]*>/g,' ').replace(/[\r\n]+/g,' ').replace(/[ \t\u00a0]+/g,' ').trim());
+const blocks=[];
+const tokens=body.split(/(<center>\s*<h3>[\s\S]*?<\/h3>\s*<\/center>|<p\b[^>]*>)/gi);
+let kind='text';
+for(const token of tokens){
+ if(!token)continue;
+ if(/^<p\b/i.test(token)){kind='p';continue}
+ if(/^<center>\s*<h3>/i.test(token)){
+   const title=plain(token);
+   if(/^ADVENTURE\s+[IVX]+\./i.test(title))blocks.push({kind:'chapter',text:title});
+   kind='text';continue;
  }
+ const text=plain(token);
+ if(!text)continue;
+ // The edition's <p> tags are intentionally unclosed (HTML 4); each starts a new paragraph.
+ // Text before the first <p> after a heading is a section numeral such as "I.".
+ if(kind==='p')blocks.push({kind:'p',text});
+ else if(/^([IVX]+\.)$/.test(text))blocks.push({kind:'section',text});
+ else if(!/^(?:Project Gutenberg|End of Project Gutenberg)/i.test(text))blocks.push({kind:'p',text});
+ kind='text';
 }
-for(const l of locations)if(pages[l.page].text.slice(l.at,l.at+l.term.length)!==l.term)throw Error('Location offset QA failed');
-const result={schemaVersion:1,id,title:'The Adventures of Sherlock Holmes',author:'Arthur Conan Doyle',language:'en',source,sourceSha256:sha256(original),reviewStatus:'pending',qa:{lossless:true,characters:original.length,pages:pages.length,chaptersDetected:headings.length,locations:locations.length,reviewedLocations:0},chapters:headings.map(h=>({...h,page:pages.findIndex(p=>h.offset>=p.start&&h.offset<p.end)})),pages,locations};
-await mkdir('research/generated',{recursive:true});
-await writeFile('research/generated/pg1661-pilot.json',JSON.stringify(result,null,2)+'\n');
+if(blocks.length<1800||blocks.filter(b=>b.kind==='chapter').length!==12)throw Error('Unexpected structured content: '+blocks.length+' blocks; chapters '+blocks.filter(b=>b.kind==='chapter').length);
+const pages=[];let current=[],length=0;
+for(const block of blocks){
+ const size=block.text.length;
+ if(current.length&&(block.kind==='chapter'||(length+size>1550&&length>700))){
+   pages.push(current);current=[];length=0;
+ }
+ current.push(block);length+=size+2;
+}
+if(current.length)pages.push(current);
+const pageTexts=pages.map(p=>p.map(b=>b.text).join('\n\n'));
+const reconstructed=pageTexts.join('\n\n');
+const expected=blocks.map(b=>b.text).join('\n\n');
+if(reconstructed!==expected)throw Error('Paragraph-preservation QA failed');
+const chapterCount=blocks.filter(b=>b.kind==='chapter').length;
+const data={id:'pg1661',title:'The Adventures of Sherlock Holmes',source,sourceType:'Gutenberg structured HTML',sourceSha256:createHash('sha256').update(html).digest('hex'),pages:pageTexts,blocks:pages,locations:[],qa:{chapters:chapterCount,paragraphs:blocks.filter(b=>b.kind==='p').length,pages:pages.length,lossless:true}};
 await mkdir('public/books',{recursive:true});
-await writeFile('public/books/pg1661.json',JSON.stringify({id,title:result.title,source:result.source,sourceSha256:result.sourceSha256,pages:pages.map(p=>p.text),locations:locations.filter(l=>l.kind==='direct').map(l=>({term:l.term,place:l.place,city:l.city,page:l.page,at:l.at,lat:l.lat,lon:l.lon,reviewStatus:'pending',mapEligible:false}))}));
-console.log(JSON.stringify(result.qa,null,2));
-console.log('Pilot draft only. No automatic publication.');
+await writeFile('public/books/pg1661.json',JSON.stringify(data));
+console.log(JSON.stringify(data.qa));
