@@ -5,11 +5,20 @@ const sites=[
  ['Holborn',51.5174,-0.1201],['London Bridge',51.5079,-0.0877],['Bethnal Green',51.527,-0.055],
  ['Whitechapel',51.5175,-0.059],['Pentonville',51.5325,-0.1133],['Hatton Garden',51.5197,-0.1085],
  ['Fleet Street',51.514,-0.1084],['Cornhill',51.5135,-0.0864],['Threadneedle Street',51.5144,-0.0887],
- ['Camden Town',51.5392,-0.1426]
+ ['Camden Town',51.5392,-0.1426],
+ ['Soho Square',51.5152,-0.1323],['Piccadilly',51.5099,-0.1356],
+ ['Covent Garden',51.5117,-0.1230],['Leicester Square',51.5104,-0.1300],
+ ['Oxford Street',51.5152,-0.1418],['Pall Mall',51.5069,-0.1322],
+ ['Trafalgar Square',51.5080,-0.1281],['Bond Street',51.5138,-0.1491],
+ ['Hyde Park',51.5073,-0.1657],['Baker Street',51.5225,-0.1571],
+ ['Charing Cross',51.5080,-0.1247],['Regent Street',51.5137,-0.1416]
 ];
 const entries=[
  {id:'pg730',repo:'Oliver-Twist_730',path:'730-h/730-h.htm',title:'Oliver Twist',first:/CHAPTER\s+I\b/i},
- {id:'pg46',repo:'A-Christmas-Carol_46',path:'46-h/46-h.htm',title:'A Christmas Carol',first:/STAVE\s+ONE\b/i}
+ {id:'pg46',repo:'A-Christmas-Carol_46',path:'46-h/46-h.htm',title:'A Christmas Carol',first:/STAVE\s+ONE\b/i},
+ {id:'pg98',repo:'A-Tale-of-Two-Cities_98',path:'98-h/98-h.htm',title:'A Tale of Two Cities',first:/I\. The Period/i},
+ {id:'pg174',repo:'The-Picture-of-Dorian-Gray_174',path:'174-h/174-h.htm',title:'The Picture of Dorian Gray',first:/CHAPTER\s+1\b/i},
+ {id:'pg43',repo:'The-Strange-Case-of-Dr.-Jekyll-and-Mr.-Hyde_43',path:'43-h/43-h.htm',title:'The Strange Case of Dr. Jekyll and Mr. Hyde',first:/STORY OF THE DOOR/i}
 ];
 const decode=s=>s.replace(/&#(x[\da-f]+|\d+);/gi,(_,n)=>String.fromCodePoint(n[0].toLowerCase()==='x'?parseInt(n.slice(1),16):Number(n))).replace(/&nbsp;/gi,' ').replace(/&mdash;/gi,'—').replace(/&ldquo;/gi,'“').replace(/&rdquo;/gi,'”').replace(/&lsquo;/gi,'‘').replace(/&rsquo;/gi,'’').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');
 const plain=s=>decode(s.replace(/<br\s*\/?\s*>/gi,' ').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim());
