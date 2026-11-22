@@ -56,7 +56,7 @@ for(const work of works){
  let blocks=[],sources=[];
  if(work.chapters){
   for(const name of work.chapters){
-   const page=(name==='小引'||name==='後記')?work.sourcePage+'/'+name:name;
+   const page=(name==='小引'||name==='後記')?work.sourcePage+'/'+name:({'狗·貓·鼠':'狗·猫·鼠','阿長與《山海經》':'阿長與《山海經》','二十四孝圖':'二十四孝圖','五猖會':'五猖會','無常':'无常','從百草園到三味書屋':'從百草園到三味書屋','父親的病':'父亲的病','瑣記':'琐记','藤野先生':'藤野先生','范愛農':'范愛農'})[name]||name;
    const source=await fetchHtml(page);
    const chapterBlocks=parseBlocks(source.html);
    if(chapterBlocks.filter(b=>b.kind==='p').length<2)throw Error('Chapter incomplete: '+page);
