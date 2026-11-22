@@ -170,3 +170,124 @@ body{
  .spread:before{display:none}
  .reader-controls>.btn{min-width:42px;min-height:42px}
 }
+
+
+/* SHOE / ORGANIC RISOGRAPH 03
+   A tactile, hand-printed literary field guide. */
+:root{
+ --bg:#eee5d0;--paper:#f9f1df;--ink:#33483b;--quiet:#746f61;
+ --rule:#cfc0a7;--green:#41624e;--clay:#b46c50;
+ --riso-gold:#d4b36a;--riso-moss:#82947a;
+}
+body{
+ background-color:var(--bg);
+ background-image:linear-gradient(120deg,#f9f1e044,#e5d7bd22),url('/textures/paper-grain.svg');
+ background-size:cover,256px 256px;
+ background-blend-mode:normal,multiply;
+}
+body:before{
+ content:'';position:fixed;inset:0;pointer-events:none;z-index:15;
+ background:url('/textures/paper-grain.svg') repeat;background-size:256px 256px;
+ opacity:.13;mix-blend-mode:multiply;
+}
+.top{background:#eee5d0ed;border-bottom:1px solid #a99a7e7d;backdrop-filter:blur(10px)}
+.brand{color:#33483b;text-shadow:0 1px 0 #fff8e6,-.6px -.5px 0 #76664e6b}
+.brand-icon{background:#41624e;border:1px solid #cdbd94;transform:rotate(-5deg);border-radius:43% 57% 52% 48% / 54% 45% 55% 46%;box-shadow:2px 2px 0 #b46c508a,inset 1px 2px 2px #213b30a3}
+.brand-icon .icon{transform:rotate(5deg)}
+.nav nav a,.account.icon-only{border-radius:48% 52% 45% 55% / 55% 46% 54% 45%}
+.nav nav a.active{background:#d5ddc5b8;box-shadow:inset 1px 2px 2px #516c583d,2px 2px 0 #b46c5066}
+h1,h2,h3,.stack-copy strong,.cover strong{
+ text-shadow:0 1px 0 #fff9e7,-.45px -.55px 0 #776b5369;
+}
+.spread{isolation:isolate}
+.spread:before{
+ width:5px;border-radius:40% 60% 50% 50%;
+ transform:rotate(-2deg);
+ background:repeating-linear-gradient(165deg,#b46c50aa 0 8px,#d4b36a96 9px 16px,transparent 17px 23px)
+}
+.spread:after{
+ content:'';position:absolute;z-index:-1;right:7%;top:4%;
+ width:34%;height:70%;pointer-events:none;opacity:.3;
+ border:2px solid #7c987f;border-radius:52% 48% 43% 57% / 36% 58% 42% 64%;
+ transform:rotate(-14deg);
+}
+.landprint{
+ isolation:isolate;overflow:hidden;
+ border-radius:43% 57% 54% 46% / 11% 9% 12% 10%;
+ box-shadow:3px 4px 0 #b46c5073,7px 8px 0 #d4b36a5e;
+}
+.landprint:before{
+ content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+ background:url('/textures/paper-grain.svg') repeat;background-size:256px 256px;
+ opacity:.4;mix-blend-mode:multiply;
+}
+.landprint:after{color:#b46c50;text-shadow:1px 1px 0 #d4b36a;transform:rotate(-12deg)}
+#search input{background:transparent}
+#search .icon-submit{
+ background:#41624e;border:1px solid #365541;
+ border-radius:48% 52% 43% 57% / 55% 44% 56% 45%;
+ box-shadow:2px 2px 0 #b46c50,4px 4px 0 #d4b36a7d,inset 1px 1px 2px #223b2e;
+ transform:rotate(-3deg);
+}
+#search .icon-submit:hover{transform:rotate(2deg) translateY(-1px)}
+/* Printed sheets: texture is material, not an overlay on text. */
+.picks a,.book-card,.stacked,.place-stack,.shelf-volume,.collection,.map-story,.place-dialog{
+ isolation:isolate;
+ background-color:#f9f1df;
+ background-image:linear-gradient(120deg,#fff9ec99,#f0e2c9aa),url('/textures/paper-grain.svg');
+ background-size:cover,256px 256px;
+ background-blend-mode:normal,multiply;
+ border-color:#d0bfa2;
+ box-shadow:2px 3px 0 #b46c503f,5px 6px 0 #41624e16;
+}
+.book-stack{border-radius:9px 13px 8px 12px / 12px 8px 11px 9px}
+.place-stack{border-radius:6px 11px 8px 10px / 9px 6px 10px 7px}
+.place-stack:nth-child(3n+2){border-radius:10px 6px 12px 7px / 7px 11px 6px 10px}
+.place-stack[open]>.place-summary{background:#d4b36a24}
+.place-summary:before{color:#b46c50;font-family:Georgia,serif;font-style:italic}
+.stack-copy .icon,.place-summary .icon{color:#b46c50}
+.book-stack>.stack:after{color:#b46c50}
+.paper{
+ position:relative;isolation:isolate;overflow:hidden;
+ background-color:#f9f1df;
+ background-image:linear-gradient(90deg,#cdb48d1f,transparent 12%,transparent 88%,#cdb48d1a),url('/textures/paper-grain.svg');
+ background-size:cover,256px 256px;
+ background-blend-mode:normal,multiply;
+ border:1px solid #d0bd9d;
+ border-radius:6px 10px 8px 11px / 10px 7px 11px 8px;
+ box-shadow:inset 7px 0 13px #c0a47a24,inset -5px 0 10px #c0a47a17,3px 5px 0 #b29b7654,9px 12px 22px #5f4d3a21;
+}
+.paper:before{color:#b46c50;text-shadow:1px 1px 0 #d4b36a;transform:rotate(-7deg)}
+.prose{color:#334137;text-shadow:.2px .25px 0 #876a5020}
+.prose .novel-paragraph{line-height:1.88}
+.literary-link{
+ color:#31563e;background:linear-gradient(transparent 57%,#91ac8596 57%,#91ac8596 91%,transparent 91%);
+ border-bottom:1px solid #6d896c8c;
+}
+.literary-link:hover{background:#d2dec0}
+.prose mark,.passages mark{background:#d4b36a9b;box-shadow:1px 1px 0 #b46c5038}
+.cover{
+ box-shadow:inset 2px 0 3px #1d2c246b,2px 3px 0 #b46c507d,4px 5px 0 #d4b36a60;
+}
+.cover:after{
+ content:'';position:absolute;inset:0;pointer-events:none;
+ background:url('/textures/paper-grain.svg') repeat;background-size:256px 256px;
+ opacity:.34;mix-blend-mode:multiply;
+}
+.cover strong{position:relative;z-index:1;text-shadow:0 1px 0 #ffffff55,0 -1px 1px #16291d94}
+.reader-controls>.btn,.reader .actions>.btn,.explore-controls .icon-only{
+ border-radius:48% 52% 44% 56% / 56% 45% 55% 44%;
+ box-shadow:1px 2px 0 #b46c5057,inset 1px 1px 1px #fff9e3bd;
+}
+.reader-controls>.btn:hover,.reader .actions>.btn:hover{transform:translateY(-1px) rotate(-2deg)}
+.explore-map-shell{border-radius:8px 13px 9px 11px;overflow:hidden;box-shadow:4px 5px 0 #b46c503c}
+.map-cover{filter:drop-shadow(2px 3px 0 #b46c5060)}
+.place-dialog{border-radius:8px 14px 7px 12px}
+.footer{border-top:1px solid #bba6878a}
+@media(max-width:650px){
+ .spread:after{width:42%;height:40%;right:0;top:2%;opacity:.17}
+ .landprint{border-radius:12px 18px 14px 16px / 15px 12px 18px 13px}
+}
+@media(prefers-reduced-motion:reduce){
+ #search .icon-submit,.reader-controls>.btn,.reader .actions>.btn{transition:none!important;transform:none!important}
+}
