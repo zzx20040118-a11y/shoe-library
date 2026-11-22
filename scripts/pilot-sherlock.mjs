@@ -50,5 +50,7 @@ for(const l of locations)if(pages[l.page].text.slice(l.at,l.at+l.term.length)!==
 const result={schemaVersion:1,id,title:'The Adventures of Sherlock Holmes',author:'Arthur Conan Doyle',language:'en',source,sourceSha256:sha256(original),reviewStatus:'pending',qa:{lossless:true,characters:original.length,pages:pages.length,chaptersDetected:headings.length,locations:locations.length,reviewedLocations:0},chapters:headings.map(h=>({...h,page:pages.findIndex(p=>h.offset>=p.start&&h.offset<p.end)})),pages,locations};
 await mkdir('research/generated',{recursive:true});
 await writeFile('research/generated/pg1661-pilot.json',JSON.stringify(result,null,2)+'\n');
+await mkdir('public/books',{recursive:true});
+await writeFile('public/books/pg1661.json',JSON.stringify({id,title:result.title,source:result.source,sourceSha256:result.sourceSha256,pages:pages.map(p=>p.text),locations:locations.filter(l=>l.kind==='direct').map(l=>({term:l.term,place:l.place,city:l.city,page:l.page,at:l.at,lat:l.lat,lon:l.lon,reviewStatus:'pending',mapEligible:false}))}));
 console.log(JSON.stringify(result.qa,null,2));
 console.log('Pilot draft only. No automatic publication.');
