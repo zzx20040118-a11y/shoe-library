@@ -403,3 +403,11 @@ h1,h2,h3,.stack-copy strong,.cover strong,.brand,.prose{ text-shadow:none!import
  .brand-icon{width:33px;height:33px}
  .stacks{gap:0 18px}
 }
+
+/* Explicitly suppress remaining legacy gradient surfaces. */
+.hero{background:#304f3e!important}
+.hero:before{background:none!important}
+.hero:after{background:#304f3eaa!important}
+.hero .search-box{background:#f8f0de!important}
+.search-box button{background:#41624e!important}
+.picks a:hover,.book-card:hover,.stack:hover{background:transparent!important}
