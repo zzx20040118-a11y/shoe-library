@@ -7,7 +7,13 @@ const dickens=[
  {id:'pg174',title:'道林·格雷的画像',author:'Oscar Wilde',en:'THE PICTURE OF DORIAN GRAY',edition:'Project Gutenberg · 英文原版',col:'green',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://www.gutenberg.org/ebooks/174'},
  {id:'pg43',title:'化身博士',author:'Robert Louis Stevenson',en:'DR. JEKYLL AND MR. HYDE',edition:'Project Gutenberg · 英文原版',col:'blue',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://www.gutenberg.org/ebooks/43'}
 ];
-export const books=[sherlock,...dickens];
+const londonClassics=[
+ {id:'pg1023',title:'荒凉山庄',author:'Charles Dickens',en:'BLEAK HOUSE',edition:'Project Gutenberg · 英文原版',col:'green',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://www.gutenberg.org/ebooks/1023'},
+ {id:'pg963',title:'小杜丽',author:'Charles Dickens',en:'LITTLE DORRIT',edition:'Project Gutenberg · 英文原版',col:'brown',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://www.gutenberg.org/ebooks/963'},
+ {id:'pg883',title:'我们共同的朋友',author:'Charles Dickens',en:'OUR MUTUAL FRIEND',edition:'Project Gutenberg · 英文原版',col:'blue',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://www.gutenberg.org/ebooks/883'},
+ {id:'pg700',title:'老古玩店',author:'Charles Dickens',en:'THE OLD CURIOSITY SHOP',edition:'Project Gutenberg · 英文原版',col:'brown',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://www.gutenberg.org/ebooks/700'}
+];
+export const books=[sherlock,...dickens,...londonClassics];
 export const allBooks=books;
 export const anchors=[];
 export const pagesOrigin='https://zzx20040118-a11y.github.io';
