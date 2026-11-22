@@ -2,7 +2,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 
 const works=[
- {id:'zh-chaohua',title:'朝花夕拾',author:'鲁迅',sourcePage:'朝花夕拾'},
+ {id:'zh-chaohua',title:'朝花夕拾',author:'鲁迅',sourcePage:'朝花夕拾',chapters:[['小引','朝花夕拾/小引'],['狗·猫·鼠','狗·猫·鼠'],['阿长与《山海经》','阿長與《山海經》'],['二十四孝图','二十四孝圖'],['五猖会','五猖會'],['无常','无常'],['从百草园到三味书屋','從百草園到三味書屋'],['父亲的病','父亲的病'],['琐记','琐记'],['藤野先生','藤野先生'],['范爱农','范愛農'],['后记','朝花夕拾/後記']]},
  {id:'zh-chunfeng',title:'春风沉醉的晚上',author:'郁达夫',sourcePage:'春風沉醉的晚上'},
  {id:'zh-qinhuai',title:'桨声灯影里的秦淮河',author:'朱自清',sourcePage:'槳聲燈影裏的秦淮河'}
 ];
@@ -53,10 +53,20 @@ const places={
 await mkdir('public/books',{recursive:true});
 for(const work of works){
  let blocks=[],sources=[];
- const source=await fetchHtml(work.sourcePage);
- blocks=parseBlocks(source.html);
- sources.push(source.url);
- if(blocks.filter(b=>b.kind==='p').length<(work.id==='zh-chaohua'?45:5))throw Error('Insufficient paragraphs: '+work.id);
+ if(work.chapters){
+   for(const [heading,page] of work.chapters){
+     const source=await fetchHtml(page);
+     const section=parseBlocks(source.html).filter(b=>b.kind==='p');
+     if(section.length<3)throw Error('Incomplete chapter '+page);
+     blocks.push({kind:'chapter',text:heading},...section);
+     sources.push(source.url);
+   }
+ }else{
+   const source=await fetchHtml(work.sourcePage);
+   blocks=parseBlocks(source.html);
+   sources.push(source.url);
+ }
+ if(blocks.filter(b=>b.kind==='p').length<(work.id==='zh-chaohua'?120:5))throw Error('Insufficient paragraphs: '+work.id);
  const paged=paginate(blocks);
  const pages=paged.map(p=>p.map(b=>b.text).join('\n\n'));
  if(pages.join('\n\n')!==blocks.map(b=>b.text).join('\n\n'))throw Error('Text QA failed '+work.id);
