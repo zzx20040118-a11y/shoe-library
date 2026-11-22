@@ -395,11 +395,13 @@ function reader(params) {
   const allHits=textRanges(text,term);
   const precise=allHits.find(([start])=>start===indexAt);
   const hit=precise ? [precise] : allHits;
+  const originalBlocks=book.blocks?.[page];
+  const readingHtml=originalBlocks?originalBlocks.map(b=>b.kind==='chapter'?'<h2 class="novel-chapter">'+esc(b.text)+'</h2>':b.kind==='section'?'<h3 class="novel-section">'+esc(b.text)+'</h3>':'<p class="novel-paragraph">'+esc(b.text)+'</p>').join(''):linkedText(text,[...hit,...selectedRanges],places);
   app.innerHTML = `<div class="wrap inner"><section class="reader">
     <div class="actions"><a class="btn" href="${previous.shelf && !source ? '#shelf' : '#discover'}">${previous.shelf && !source ? '返回书架' : '返回发现'}</a>
     <button class="btn solid" id="save-book">${previous.shelf ? '已加入书架' : '加入书架'}</button></div>
     <article class="paper"><h1>${esc(book.title)}</h1><details class="edition"><summary>${esc(book.author)} · 版本信息</summary>${esc(book.edition||'原创短篇')} ${book.source?'<a target="_blank" rel="noopener" href="'+esc(book.source)+'">查看底本</a>':''} ${book.count?'<a href="https://www.gutenberg.org/policy/license.html">Gutenberg 使用条款</a>':''}</details>
-    <div class="prose" id="prose" lang="${({'英文':'en','法文':'fr','德文':'de','西班牙文':'es','芬兰文':'fi','荷兰文':'nl','意大利文':'it','葡萄牙文':'pt','日文':'ja','瑞典文':'sv','俄文':'ru','丹麦文':'da','la':'la'})[book.lang]||'zh'}">${linkedText(text,[...hit,...selectedRanges],places)}</div>
+    <div class="prose" id="prose" lang="${({'英文':'en','法文':'fr','德文':'de','西班牙文':'es','芬兰文':'fi','荷兰文':'nl','意大利文':'it','葡萄牙文':'pt','日文':'ja','瑞典文':'sv','俄文':'ru','丹麦文':'da','la':'la'})[book.lang]||'zh'}">${readingHtml}</div>
     <div class="actions"><a class="btn" href="${studioLink(book,page,'bookmark')}">记一笔</a><button id="save-quote" class="btn">摘录选文</button></div>
     ${cards.length?'<details class="folio"><summary>本页手记 · '+cards.length+'</summary><div class="collections">'+cards.map(collection).join('')+'</div></details>':''}
 
