@@ -361,13 +361,11 @@ function openCommunity(a,book) {
 function sentenceCarry(book,index){
   if(index<=0||index>=book.pages.length)return 0;
   const before=book.pages[index-1]||'',after=book.pages[index]||'';
-  if(!before||!after||/[。！？.!?…][”’\"')）】]*\\s*$|\\n\\s*$/u.test(before))return 0;
-  const limit=Math.min(after.length,280),prefix=after.slice(0,limit);
-  const sentence=/[。！？!?]|\\.(?=[”’\"')）】\\s]|$)|[;；](?=\\s|$)/gu;
-  const match=sentence.exec(prefix);
+  if(!before||!after||/[。！？.!?…][”’"')）】]*\s*$|\n\s*$/u.test(before))return 0;
+  const prefix=after.slice(0,Math.min(after.length,280));
+  const match=/[。！？!?]|\.([”’"')）】]*)(?=\s|$)|[;；](?=\s|$)/gu.exec(prefix);
   if(match)return match.index+match[0].length;
-  // Prefer an existing word boundary if the original split was inside an English word.
-  const whitespace=prefix.search(/\\s/u);
+  const whitespace=prefix.search(/\s/u);
   return whitespace>=0&&whitespace<80?whitespace+1:0;
 }
 function readingSlice(book,page){
@@ -379,7 +377,9 @@ function reader(params) {
   const book = getBook(params.get('id'));
   if (!book) { app.innerHTML = '<div class="wrap inner"><div class="empty">这本书找不到了。<a href="#discover">返回发现</a></div></div>'; return; }
   const previous = records['book:'+book.id] || {};
-  const page = pageOf(book,params.get('p') ?? previous.page);
+  const requestedPage = pageOf(book,params.get('p') ?? previous.page);
+  const requestedAt=params.has('at')?Number(params.get('at')):-1;
+  const page = requestedAt>=0&&requestedAt<sentenceCarry(book,requestedPage)&&requestedPage>0?requestedPage-1:requestedPage;
   const term = (params.get('q') || '').slice(0,80);
   const source = (params.get('from') || '').slice(0,100);
   const view=readingSlice(book,page);
@@ -387,7 +387,7 @@ function reader(params) {
   const cards = craftsFor(book,page);
   const selectedRanges = cards.map(([,card]) => card.range).filter(Boolean);
   const places = [...(book.anchors?.filter(a=>a.page===page&&a.at>=view.start).map(a=>({...a,at:a.at-view.start}))||[]),...(view.next?book.anchors?.filter(a=>a.page===page+1&&a.at<view.next).map(a=>({...a,at:book.pages[page].length-view.start+a.at})):[])];
-  const indexAt=params.has('at') ? Number(params.get('at'))-view.start : -1;
+  const indexAt=requestedAt>=0?(requestedPage===page?requestedAt-view.start:book.pages[page].length-view.start+requestedAt):-1;
   const allHits=textRanges(text,term);
   const precise=allHits.find(([start])=>start===indexAt);
   const hit=precise ? [precise] : allHits;
