@@ -498,48 +498,19 @@ h1,h2,h3,.stack-copy strong,.cover strong,.brand,.prose{ text-shadow:none!import
 }
 
 
-/* Organic landscape and hand-drawn riso marks — no frames or gradients. */
+/* Smooth organic mountain print, without the added decorative strokes. */
 .landprint{
- position:relative!important;
  border:0!important;
- border-radius:45% 55% 48% 52% / 15% 12% 18% 14%!important;
- clip-path:polygon(2% 13%,9% 7%,18% 9%,27% 4%,38% 7%,49% 3%,61% 6%,73% 4%,86% 9%,96% 13%,99% 22%,97% 37%,100% 49%,97% 62%,99% 75%,95% 87%,84% 92%,73% 90%,60% 96%,49% 93%,37% 97%,25% 93%,13% 96%,4% 88%,2% 75%,4% 62%,1% 49%,4% 37%,1% 25%)!important;
+ border-radius:18% 14% 17% 15% / 14% 18% 15% 17%!important;
+ clip-path:none!important;
  overflow:hidden!important;
+ box-shadow:none!important;
 }
 .landprint canvas{
- border-radius:inherit!important;
- width:100%!important;
  display:block!important;
+ width:100%!important;
+ border-radius:inherit!important;
+ clip-path:none!important;
 }
-.spread{position:relative!important;isolation:isolate}
-.spread::before{
- content:''!important;display:block!important;position:absolute!important;
- width:clamp(55px,8vw,115px)!important;height:clamp(240px,30vw,385px)!important;
- left:-36px!important;top:8%!important;
- border:0!important;border-left:3px solid #b8755f!important;
- border-radius:55% 45% 58% 42% / 50% 55% 45% 50%!important;
- transform:rotate(-5deg)!important;background:none!important;opacity:.7!important;pointer-events:none!important;
-}
-.spread::after{
- content:''!important;display:block!important;position:absolute!important;
- right:3%!important;top:3%!important;width:34%!important;height:20%!important;
- border:0!important;border-top:2px solid #91a48b!important;
- border-radius:48% 52% 55% 45% / 58% 42% 58% 42%!important;
- transform:rotate(-9deg)!important;background:none!important;opacity:.5!important;pointer-events:none!important;
-}
-.spread .entry:after{
- content:'';display:block;width:min(260px,80%);height:16px;margin-top:24px;
- background:#c58b6c;
- clip-path:polygon(0 58%,8% 46%,18% 57%,29% 34%,41% 48%,52% 23%,64% 40%,75% 18%,88% 38%,100% 24%,100% 36%,88% 51%,75% 31%,64% 53%,52% 35%,41% 60%,29% 47%,18% 69%,8% 58%,0 69%);
- opacity:.8;
-}
-.section-head{position:relative}
-.section-head:after{
- background:#829a7c88!important;
- clip-path:polygon(0 60%,9% 39%,19% 61%,30% 35%,41% 57%,53% 37%,65% 61%,77% 35%,89% 55%,100% 38%,100% 54%,89% 70%,77% 51%,65% 77%,53% 53%,41% 72%,30% 51%,19% 77%,9% 55%,0 76%)!important;
-}
-@media(max-width:650px){
- .spread::before{left:-14px!important;width:30px!important;height:180px!important;opacity:.3!important}
- .spread::after{top:0!important;right:4%!important;width:52%!important}
- .landprint{clip-path:polygon(3% 11%,17% 5%,33% 9%,50% 3%,67% 8%,83% 5%,97% 12%,99% 32%,96% 52%,99% 75%,93% 91%,75% 95%,57% 92%,38% 98%,20% 92%,4% 88%,2% 68%,5% 48%,1% 29%)!important}
-}
+.spread::before,.spread::after{display:none!important;content:none!important}
+.spread .entry::after{display:none!important;content:none!important}
