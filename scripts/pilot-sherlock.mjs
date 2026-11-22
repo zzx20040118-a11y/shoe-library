@@ -50,7 +50,25 @@ const reconstructed=pageTexts.join('\n\n');
 const expected=blocks.map(b=>b.text).join('\n\n');
 if(reconstructed!==expected)throw Error('Paragraph-preservation QA failed');
 const chapterCount=blocks.filter(b=>b.kind==='chapter').length;
-const data={id:'pg1661',title:'The Adventures of Sherlock Holmes',source,sourceType:'Gutenberg structured HTML',sourceSha256:createHash('sha256').update(html).digest('hex'),pages:pageTexts,blocks:pages,locations:[],qa:{chapters:chapterCount,paragraphs:blocks.filter(b=>b.kind==='p').length,pages:pages.length,lossless:true}};
+// Pilot place index: specific, real-world London sites only; never index London as a pin.
+const knownPlaces=[
+ {term:'Baker Street',place:'Baker Street',city:'London',lat:51.5225,lon:-0.1571},
+ {term:'Charing Cross',place:'Charing Cross railway station',city:'London',lat:51.5080,lon:-0.1247},
+ {term:'Paddington',place:'Paddington railway station',city:'London',lat:51.5154,lon:-0.1755},
+ {term:'Fleet Street',place:'Fleet Street',city:'London',lat:51.5140,lon:-0.1084},
+ {term:'Regent Street',place:'Regent Street',city:'London',lat:51.5137,lon:-0.1416}
+];
+const locations=[];
+for(const site of knownPlaces){
+ for(let page=0;page<pageTexts.length;page++){
+   const text=pageTexts[page];
+   const re=new RegExp('\\\\b'+site.term.replace(/[.*+?^\x24{}()|[\\]\\\\]/g,'\\\\\x24&')+'\\\\b','gi');
+   for(const match of text.matchAll(re)){
+     locations.push({...site,page,at:match.index,snippet:text.slice(Math.max(0,match.index-80),Math.min(text.length,match.index+site.term.length+110)),reviewStatus:'approved',mapEligible:true,relationType:'direct'});
+   }
+ }
+}
+const data={id:'pg1661',title:'The Adventures of Sherlock Holmes',source,sourceType:'Gutenberg structured HTML',sourceSha256:createHash('sha256').update(html).digest('hex'),pages:pageTexts,blocks:pages,locations,qa:{chapters:chapterCount,paragraphs:blocks.filter(b=>b.kind==='p').length,pages:pages.length,lossless:true}};
 await mkdir('public/books',{recursive:true});
 await writeFile('public/books/pg1661.json',JSON.stringify(data));
 console.log(JSON.stringify(data.qa));
