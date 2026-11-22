@@ -1,1 +1,16 @@
-{"framework":null,"installCommand":"","buildCommand":"node build-vercel.mjs","outputDirectory":"public","rewrites":[{"source":"/texts/:file","destination":"https://raw.githubusercontent.com/zzx20040118-a11y/shoe-library/876228c00a71644e54d00fd94fe818f4fa5fa8ca/library/:file"},{"source":"/api/community","destination":"https://wenxue-jingwei.vividchutney33.chatgpt.site/api/community"},{"source":"/api/shared-photo/:id","destination":"https://wenxue-jingwei.vividchutney33.chatgpt.site/api/shared-photo/:id"}]}
+{
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "node build-vercel.mjs",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/api/community",
+      "destination": "https://wenxue-jingwei.vividchutney33.chatgpt.site/api/community"
+    },
+    {
+      "source": "/api/shared-photo/:id",
+      "destination": "https://wenxue-jingwei.vividchutney33.chatgpt.site/api/shared-photo/:id"
+    }
+  ]
+}
