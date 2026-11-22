@@ -1,0 +1,27 @@
+name: Sherlock Holmes pilot QA
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/pilot-sherlock.mjs'
+      - '.github/workflows/sherlock-pilot.yml'
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run independent full-text import and QA
+        run: node scripts/pilot-sherlock.mjs
+      - name: Verify generated draft
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; const b=JSON.parse(fs.readFileSync('research/generated/pg1661-pilot.json')); if(!b.qa.lossless||b.pages.length<20||b.locations.length<1||b.reviewStatus!=='pending')process.exit(1); console.log(b.qa)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sherlock-pilot-review-draft
+          path: research/generated/pg1661-pilot.json
+          retention-days: 7
