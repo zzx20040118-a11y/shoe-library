@@ -10,7 +10,7 @@ const icons = {
 };
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${icons[name]}</svg>`;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-const staticSite = location.origin === pagesOrigin;
+const staticSite = location.origin !== cloudOrigin;
 const accountOrigin = staticSite ? cloudOrigin : '';
 let renderVersion=0;
 const getBook = id => allBooks.find(book => book.id === id);
@@ -106,7 +106,7 @@ function matches(book) {
   const needle = normalize(query);
   const eligible = book.anchors.filter(a => region === '全部' || a.region === region);
   if (!eligible.length) {
-    if (region==='全部' && needle && [book.title,book.en,book.author].some(v=>normalize(v).includes(needle))) return [{book,page:0,term:''}];
+    if (region==='全部' && [book.title,book.en,book.author].some(v=>normalize(v).includes(needle))) return [{book,page:0,term:''}];
     return [];
   }
   if (!needle) {
@@ -243,7 +243,7 @@ function craftHTML(card, isPreview = false) {
     ${stickers ? `<div class="sticker">${esc(stickers)}</div>` : ''}
     <strong>${esc(card.title || (card.type === 'bookmark' ? '我的书签' : '我的文学打卡'))}</strong>
     ${card.quote ? `<p class="quote">“${esc(card.quote)}”</p>` : ''}
-    ${card.photo ? `<img src="${esc(card.photo.startsWith('/api/shared-photo/') ? accountOrigin+card.photo : card.photo)}" alt="卡片照片">` : ''}
+    ${card.photo ? `<img src="${esc(card.photo.startsWith('/api/shared-photo/') ? (location.origin===pagesOrigin ? accountOrigin : '')+card.photo : card.photo)}" alt="卡片照片">` : ''}
     ${card.memo ? `<p>${esc(card.memo)}</p>` : ''}
     ${getBook(card.book) ? `<small>《${esc(getBook(card.book).title)}》 · 第 ${card.page+1} 页</small>` : ''}
   </article>`;
@@ -296,7 +296,7 @@ function openCommunity(a,book) {
   async function load() {
     more.hidden = true; status.textContent = '正在读取公开书签…';
     try {
-      const response = await fetch(accountOrigin+'/api/community?anchor='+a.id+(cursor ? '&before='+cursor : ''));
+      const response = await fetch((location.origin===pagesOrigin ? accountOrigin : '')+'/api/community?anchor='+a.id+(cursor ? '&before='+cursor : ''));
       if (!response.ok) throw new Error();
       const data = await response.json();
       dialog.querySelector('[data-cards]').insertAdjacentHTML('beforeend',data.cards.map(c => craftHTML(c)).join(''));

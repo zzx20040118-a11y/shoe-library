@@ -1,3 +1,4 @@
 dist/
 .openai/*.lock
 *.tar.gz
+public/

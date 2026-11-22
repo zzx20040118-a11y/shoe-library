@@ -65,7 +65,7 @@ export const cloudOrigin='https://wenxue-jingwei.vividchutney33.chatgpt.site';
 export async function loadBook(book) {
   if (!book?.count || book.loaded) return;
   if (!pending.has(book.id)) pending.set(book.id,(async()=>{
-    const response=await fetch(pagesOrigin+'/shoe-library/library/'+book.id+'.json.gz');
+    const response=await fetch((location.origin===cloudOrigin || location.origin===pagesOrigin ? 'https://raw.githubusercontent.com/zzx20040118-a11y/shoe-library/876228c00a71644e54d00fd94fe818f4fa5fa8ca/library/' : '/texts/')+book.id+'.json.gz');
     if (!response.ok) throw Error('下载失败');
     const bytes=new Uint8Array(await response.arrayBuffer());
     const stream=new Blob([bytes]).stream();
