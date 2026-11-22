@@ -411,3 +411,41 @@ h1,h2,h3,.stack-copy strong,.cover strong,.brand,.prose{ text-shadow:none!import
 .hero .search-box{background:#f8f0de!important}
 .search-box button{background:#41624e!important}
 .picks a:hover,.book-card:hover,.stack:hover{background:transparent!important}
+
+
+/* Search hero: one seamless abstract riso print, no separate framed artwork. */
+.spread{
+ display:flex!important;align-items:center!important;min-height:490px;
+ position:relative;isolation:isolate;
+ margin:12px calc(50% - 50vw) 20px!important;
+ padding:52px max(28px,calc((100vw - 1180px)/2)) 80px!important;
+ background:#f6e9d3 url('/textures/riso-abstract-hero.svg') center center / cover no-repeat!important;
+ border:0!important;
+}
+.spread>div:first-child{position:relative;z-index:2;width:min(610px,56%);max-width:100%}
+.spread:before,.spread:after{content:none!important;display:none!important}
+.spread h1{color:#2e4b3b;text-shadow:none!important}
+.landprint{display:none!important}
+#search{position:relative!important;background:transparent!important;border:0!important;box-shadow:none!important;max-width:600px}
+#search input{
+ border:0!important;outline:0!important;
+ background:transparent!important;
+ padding:10px 12px 18px 0!important;
+}
+#search:before{
+ content:'';position:absolute;left:0;right:58px;bottom:1px;height:12px;pointer-events:none;
+ background:#41624e;
+ clip-path:polygon(0 42%,7% 19%,16% 47%,25% 65%,34% 53%,44% 22%,55% 36%,66% 63%,78% 43%,89% 24%,100% 50%,100% 69%,89% 43%,78% 63%,66% 81%,55% 54%,44% 41%,34% 71%,25% 82%,16% 65%,7% 38%,0 60%);
+ opacity:.88;
+}
+#search .icon-submit{position:relative;z-index:1}
+.spread .entry{margin-top:24px}
+@media(max-width:800px){
+ .spread{min-height:440px;background-position:56% center!important}
+ .spread>div:first-child{width:min(560px,74%)}
+}
+@media(max-width:650px){
+ .spread{min-height:500px;padding:45px 24px 140px!important;background-position:58% center!important}
+ .spread>div:first-child{width:100%}
+ .spread h1{font-size:clamp(35px,9vw,54px)}
+}
