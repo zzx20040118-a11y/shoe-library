@@ -18,6 +18,7 @@ const icons = {
   quote:'<path d="M10 11H5V6h6v7l-4 4M20 11h-5V6h6v7l-4 4"/>',
   chevronDown:'<path d="m6 9 6 6 6-6"/>',
   flag:'<path d="M5 21V4m0 1c5-4 9 4 15 0v11c-6 4-10-4-15 0"/>',
+  upload:'<path d="M12 16V3m-5 5 5-5 5 5"/><path d="M4 16v4h16v-4"/>',
   close:'<path d="M18 6 6 18M6 6l12 12"/>'
 };
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${icons[name]}</svg>`;
@@ -591,6 +592,37 @@ function journal(){
   app.innerHTML='<section class="wrap inner"><div class="section-head"><h1>我的手记</h1><a class="btn" href="#studio">写手记</a></div>'+(cards.length?'<div class="collections">'+cards.map(collection).join('')+'</div>':'<p class="empty">把一段摘录、一张街头照片或今天经过的地点记在这里。</p>')+'</section>';
 }
 
+
+function importBook(){
+ app.innerHTML=`<section class="wrap inner import-page"><div class="section-head"><div><small>SHOE / BOOK SUBMISSIONS</small><h1>导入一本书</h1><p class="sub">提交原文与来源，审核通过后才会进入公共书架。作品中的地点会在上架前整理与核对。</p></div></div>
+ <form id="book-import-form" class="import-form">
+ <label>书名 <input name="title" required maxlength="180" placeholder="作品原名"></label>
+ <label>作者 <input name="author" required maxlength="180" placeholder="作者姓名"></label>
+ <label>原文语言 <select name="language"><option value="en">English</option><option value="zh">中文</option><option value="fr">Français</option><option value="other">其他</option></select></label>
+ <label>原文文件（EPUB / DOCX / TXT，20 MB 内）<input name="file" type="file" accept=".epub,.docx,.txt" required></label>
+ <label>作品来源链接 <input name="sourceUrl" type="url" placeholder="https://…"></label>
+ <label>版权与授权依据 <textarea name="copyrightNote" rows="4" minlength="8" maxlength="3000" required placeholder="说明公版依据、出版年份、授权方式或可核实的来源。"></textarea></label>
+ <label>补充说明（选填） <textarea name="description" rows="3" maxlength="2000" placeholder="版本信息、地点线索或其他备注"></textarea></label>
+ <p class="sub">审核流程：版权与来源核验 → 正文结构检查 → 现实地点匹配与人工复核 → 上架。提交不代表自动公开。</p>
+ <button class="btn solid" type="submit">提交审核</button><p id="import-feedback" role="status" aria-live="polite"></p></form>
+ <section class="section"><div class="section-head"><h2>我的提交</h2></div><div id="import-history"><p class="sub">正在加载…</p></div></section></section>`;
+ const form=app.querySelector('#book-import-form'),feedback=app.querySelector('#import-feedback'),history=app.querySelector('#import-history');
+ const statusLabels={pending:'等待审核',reviewing:'审核中',rejected:'未通过',approved:'审核通过',published:'已上架'};
+ async function updateHistory(){
+  if(!user){history.innerHTML='<p class="sub">登录后可以查看提交记录。</p>';return}
+  try{const items=await personal.myBookSubmissions();history.innerHTML=items.length?items.map(item=>`<div class="import-history-row"><strong>${esc(item.title)}</strong><span>${esc(item.author)}</span><span>${esc(statusLabels[item.status]||item.status)}</span><small>${esc(item.review_note||new Date(item.created_at).toLocaleDateString())}</small></div>`).join(''):'<p class="sub">还没有提交过书籍。</p>'}catch{history.textContent='暂时无法获取提交记录。'}
+ }
+ form.onsubmit=async event=>{
+  event.preventDefault();
+  if(!user){feedback.textContent='请先登录账号，再提交书籍。';showAccount();return}
+  const btn=form.querySelector('[type="submit"]');btn.disabled=true;feedback.textContent='正在上传原文并创建审核记录…';
+  try{const data=new FormData(form);await personal.submitBook({file:data.get('file'),title:String(data.get('title')).trim(),author:String(data.get('author')).trim(),language:String(data.get('language')),sourceUrl:String(data.get('sourceUrl')).trim(),copyrightNote:String(data.get('copyrightNote')).trim(),description:String(data.get('description')).trim()});feedback.textContent='提交成功！作品已进入待审核队列。';form.reset();await updateHistory()}
+  catch(error){feedback.textContent='提交失败：'+(error.message||'请稍后重试')}
+  finally{btn.disabled=false}
+ };
+ updateHistory();
+}
+
 async function render() {
   const version=++renderVersion;
   mapObserver?.disconnect();
@@ -620,7 +652,8 @@ async function render() {
     catch { if(version===renderVersion)app.innerHTML='<div class="wrap inner">地点索引载入失败，请刷新页面重试。</div>';return; }
     if(version!==renderVersion)return;
   }
-  if (name === 'explore') explore();
+  if (name === 'import') importBook();
+  else if (name === 'explore') explore();
   else if (name === 'journal') journal();
   else if (name === 'library') discover();
   else if (name === 'shelf') shelf();
