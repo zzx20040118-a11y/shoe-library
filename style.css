@@ -52,3 +52,12 @@ body:not(:has(.reader)){background:#f3ecdc}
 .explore-controls input{border:0;background:transparent;padding:7px 9px;min-width:100px;width:190px;outline-offset:2px}
 .explore-message{position:absolute;z-index:3;left:16px;top:80px;max-width:340px;background:#fffdf7;padding:10px 14px;border:1px solid #deded1;border-radius:6px;font-size:13px}
 @media(max-width:650px){.explore-page{width:100%;margin:0 auto 24px}.explore-head{padding:16px 20px 12px;margin:0}.explore-map{height:calc(100dvh - 195px);min-height:420px;border-radius:0}.explore-controls{top:12px;left:12px;right:12px;max-width:none;align-items:flex-start}.explore-controls form{flex:1;min-width:180px}.explore-controls input{width:100%;min-width:80px}.explore-message{top:112px;left:12px;right:12px;max-width:none}}
+
+
+/* Keep map zoom controls separate from location/search controls. */
+.explore-map .map-tools{top:auto;left:auto;right:16px;bottom:42px;z-index:4}
+.explore-map .map-tools button{width:40px;height:40px;font-size:22px;box-shadow:0 2px 8px #1b302022}
+@media(max-width:650px){
+  .explore-map .map-tools{right:12px;bottom:38px}
+  .explore-map .map-tools button{width:42px;height:42px}
+}
