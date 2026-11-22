@@ -62,7 +62,7 @@ const locations=[];
 for(const site of knownPlaces){
  for(let page=0;page<pageTexts.length;page++){
    const text=pageTexts[page];
-   const re=new RegExp('\\\\b'+site.term.replace(/[.*+?^\x24{}()|[\\]\\\\]/g,'\\\\\x24&')+'\\\\b','gi');
+   const re=new RegExp('\\\\b'+site.term+'\\\\b','gi');
    for(const match of text.matchAll(re)){
      locations.push({...site,page,at:match.index,snippet:text.slice(Math.max(0,match.index-80),Math.min(text.length,match.index+site.term.length+110)),reviewStatus:'approved',mapEligible:true,relationType:'direct'});
    }
