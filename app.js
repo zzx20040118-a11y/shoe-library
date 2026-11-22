@@ -134,35 +134,22 @@ function shortExcerpt(text, at, term, clippedLeft=false, clippedRight=false) {
 const themes={'城市日常':['茶','市集','market'],'食物与味觉':['酒','茶','早餐','breakfast'],'街道与建筑':['街','桥','楼','street','bridge'],'季节与天气':['雪','雨','春','snow','rain'],'旅行与行走':['舟','旅','步行','walk'],'故乡与记忆':['故乡','乡愁','记忆','memory']};
 function matches(book) {
   const needle=normalize(query), hits=new Map();
-  function add(page,term,hint='',anchor) {
-    const full=book.pages[page], text=full || hint || book.sample || '';
-    const folded=text.toLowerCase(), word=term.toLowerCase();
-    const anchorInHint=anchor && hint ? hint.indexOf(anchor.term) : -1;
-    const base=anchorInHint>=0 ? anchor.at-anchorInHint : 0;
-    let at=full && anchor ? (anchor.term===term ? anchor.at : base+hint.toLowerCase().indexOf(word)) : folded.indexOf(word);
-    if(at<0 || folded.slice(at,at+word.length)!==word)at=Math.max(0,folded.indexOf(word));
-    const offset=full?at:base+at;
-    const key=page+'|'+offset+'|'+term;
-    if(!hits.has(key))hits.set(key,{page,term,offset,line:shortExcerpt(text,at,term,!full&&base>0,!full&&!!book.count)});
+  if(!needle)return [{page:0,term:'',offset:0,line:shortExcerpt(book.pages[0]||book.sample||'',0,'')}];
+  const cityAlias={'伦敦':'london','英国伦敦':'london','london':'london'};
+  const cityNeedle=cityAlias[needle]||needle;
+  for(const a of book.anchors||[]){
+    if(!walkableAnchor(a))continue;
+    if(![a.city,a.place,a.term,a.keywords].some(v=>normalize(v).includes(cityNeedle)))continue;
+    const text=book.pages[a.page]||a.snippet||'';
+    const offset=Number.isInteger(a.at)?a.at:Math.max(0,normalize(text).indexOf(normalize(a.term)));
+    const key=a.page+'|'+offset+'|'+a.place;
+    if(!hits.has(key))hits.set(key,{page:a.page,term:a.term,place:a.place,city:a.city,offset,line:shortExcerpt(text,offset,a.term)});
   }
-  if(needle){
-    const words=Object.hasOwn(themes,query)?themes[query]:[];
-    const citySearch=needle&&anchors.some(a=>walkableAnchor(a)&&normalize(a.city)===needle);
-    for(const a of book.anchors||[]){
-      if(citySearch&&!walkableAnchor(a))continue;
-      const context=a.snippet || book.pages[a.page] || ''; const theme=words.find(w=>normalize(context).includes(w));
-      if(theme)add(a.page,theme,context,a);
-      if([a.term,a.place,a.city,a.keywords,a.snippet||''].some(v=>normalize(v).includes(needle))) add(a.page,citySearch?a.term:((a.snippet||'').toLowerCase().includes(needle)?query:a.term),a.snippet,a);
-    }
-    if(!citySearch&&(!book.count||book.loaded)) book.pages.forEach((p,i)=>{if(normalize(p).includes(needle))add(i,query)});
-    if(!citySearch&&!hits.size&&normalize(book.sample||'').includes(needle))add(0,query);
-  }
-  if(!hits.size&&(!needle||[book.title,book.author,book.en].some(v=>normalize(v).includes(needle))))add(0,'');
   return [...hits.values()];
 }
 function stack(book,hits){
   const first=hits[0], quote=h=>paint(h.line,textRanges(h.line,h.term));
-  const heading=cover(book)+'<span class="stack-copy"><strong>'+paint(book.title,textRanges(book.title,query))+'</strong><small>'+paint(book.author,textRanges(book.author,query))+'</small><span>'+quote(first)+'</span></span>';
+  const heading=cover(book)+'<span class="stack-copy"><strong>'+esc(first.place||book.title)+'</strong><small>'+esc(first.city?first.city+' · '+book.title:book.author)+'</small><span>'+quote(first)+'</span></span>';
   const link=h=>esc(readLink(book,h.page,h.term,query)+(h.term?'&at='+h.offset:''));
   if(hits.length===1)return '<a class="stack" href="'+link(first)+'">'+heading+'</a>';
   return '<details class="stacked"><summary class="stack">'+heading+'<em>'+hits.length+' 处匹配</em></summary><div class="passages">'+hits.map(h=>'<a href="'+link(h)+'"><small>第 '+(h.page+1)+' 页</small>'+quote(h)+'</a>').join('')+'</div></details>';
@@ -178,13 +165,13 @@ function bookCard({book,page,term,source,meta}) {
 function discover(){
   const groups=books.map(book=>({book,hits:matches(book)})).filter(g=>g.hits.length);
   const featured=books.filter(b=>b.anchors?.length).slice(0,3);
-  app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="书名、作家、地点、生活主题或原文" value="${esc(query)}"><button>搜索</button></form><div class="entry"><a class="explore-link" href="#explore">${icon('locate')} 探索身边</a></div></div><figure class="landprint"><canvas aria-label="原创套色版画：层山与落日" role="img"></canvas><figcaption>山行 · 套色习作</figcaption></figure></section>
+  app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="搜索城市或具体地点，例如 London" value="${esc(query)}"><button>搜索</button></form><div class="entry"><a class="explore-link" href="#explore">${icon('locate')} 探索身边</a></div></div><figure class="landprint"><canvas aria-label="原创套色版画：层山与落日" role="img"></canvas><figcaption>山行 · 套色习作</figcaption></figure></section>
   ${!query&&featured.length?'<section class="picks"><h2>漫游选读</h2><div>'+featured.map(b=>{const a=b.anchors[0];return '<a href="'+esc(readLink(b,a.page,a.term,a.place))+'"><small>'+esc(a.city)+' · '+esc(a.place)+'</small><h3>'+esc(b.title)+'</h3><p>'+esc(excerpt(b,a.page,a.term,a.snippet,a.at))+'</p></a>'}).join('')+'</div></section>':''}
   <section class="section" id="results"><div class="section-head"><h2>${query?'搜索结果':'全部作品'}</h2><small>${groups.length} 部作品与版本</small></div><div class="stacks"></div><button class="btn" id="more">继续浏览</button></section></div>`;
   drawLandscape(app.querySelector('.landprint canvas'));
   let shown=0;const more=app.querySelector('#more');
   function append(){app.querySelector('.stacks').insertAdjacentHTML('beforeend',groups.slice(shown,shown+24).map(g=>stack(g.book,g.hits)).join(''));shown+=24;more.hidden=shown>=groups.length;}
-  append();if(!groups.length)app.querySelector('.stacks').textContent=books.length?'未找到匹配。可以试试原文拼写或作者姓氏。':'书库正在重建。新作品通过正文与地点审核后将在这里上架。';
+  append();if(!groups.length)app.querySelector('.stacks').textContent=books.length?'没有找到已收录的具体地点。城市只用于筛选，不能作为地点结果。':'书库正在重建。新作品通过正文与地点审核后将在这里上架。';
   app.querySelector('#search').onsubmit=e=>{e.preventDefault();query=new FormData(e.currentTarget).get('query').trim();if(user&&query)personal.logSearch(query).catch(()=>toast('搜索历史暂未同步'));render();app.querySelector('#results')?.scrollIntoView();};
   more.onclick=append;
 }
