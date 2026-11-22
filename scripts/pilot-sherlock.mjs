@@ -21,7 +21,7 @@ let kind='text';
 for(const token of tokens){
  if(!token)continue;
  if(/^<p\b/i.test(token)){kind='p';continue}
- if(/^<center>\s*<h3>/i.test(token)){
+ if(/^<h3>/i.test(token)){
    const title=plain(token);
    if(/^(?:ADVENTURE\s+)?[IVX]+\./i.test(title))blocks.push({kind:'chapter',text:title});
    kind='text';continue;
