@@ -40,3 +40,16 @@ export async function persist(uid,key,value,membership,importing=false){
 export async function logSearch(q){if(q)checked(await client.rpc('shoe_search',{q:q.slice(0,80)}))}
 export async function history(uid){return checked(await client.from('search_history').select('term').eq('user_id',uid).order('searched_at',{ascending:false}).limit(100))}
 export async function clearHistory(uid){checked(await client.from('search_history').delete().eq('user_id',uid))}
+
+export async function isPlaceAdmin(){
+ const {data,error}=await client.auth.getUser();
+ if(error||!data.user)return false;
+ return data.user.app_metadata?.shoe_role==='admin';
+}
+export async function listPlaceReviews(bookId){
+ return checked(await client.from('place_reviews').select('*').eq('book_id',bookId).order('page').limit(10000));
+}
+export async function savePlaceReview(payload){
+ if(!await isPlaceAdmin())throw Error('管理员身份已失效，请重新登录');
+ return checked(await client.from('place_reviews').upsert(payload,{onConflict:'book_id,page,at_offset,term'}).select().single());
+}
