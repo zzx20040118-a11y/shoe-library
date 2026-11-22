@@ -169,9 +169,7 @@ function bookCard({book,page,term,source,meta}) {
 function discover(){
   const groups=books.map(book=>({book,hits:matches(book)})).filter(g=>g.hits.length);
   const featured=['fusheng','huxin','pg1661'].map(id=>getBook(id));
-  app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="书名、作家、地点、生活主题或原文" value="${esc(query)}"><button>搜索</button></form><div class="entry"><button id="locate" ${locating?'disabled':''}>${icon('locate')} ${locating?'定位中…':'探索身边'}</button><button id="open-map">文学地图</button><button id="theme-pick">季节与天气</button></div></div><figure class="landprint"><canvas aria-label="原创套色版画：层山与落日" role="img"></canvas><figcaption>山行 · 套色习作</figcaption></figure></section>
-  ${locationMessage?'<p role="status">'+esc(locationMessage)+'</p>':''}
-  ${mapState?'<section id="nearby"><div class="section-head"><h2>文学地图</h2><button class="btn" id="close-map">收起地图</button></div><div id="map" class="map"></div></section>':''}
+  app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="书名、作家、地点、生活主题或原文" value="${esc(query)}"><button>搜索</button></form><div class="entry"><a class="explore-link" href="#explore">${icon('locate')} 探索身边</a></div></div><figure class="landprint"><canvas aria-label="原创套色版画：层山与落日" role="img"></canvas><figcaption>山行 · 套色习作</figcaption></figure></section>
   ${!query?'<section class="picks"><h2>漫游选读</h2><div>'+featured.map(b=>{const a=b.anchors[0];return '<a href="'+esc(readLink(b,a.page,a.term,a.place))+'"><small>'+esc(a.city)+' · '+esc(a.place)+'</small><h3>'+esc(b.title)+'</h3><p>'+esc(excerpt(b,a.page,a.term,a.snippet,a.at))+'</p></a>'}).join('')+'</div></section>':''}
   <section class="section" id="results"><div class="section-head"><h2>${query?'搜索结果':'全部作品'}</h2><small>${groups.length} 部作品与版本</small></div><div class="stacks"></div><button class="btn" id="more">继续浏览</button></section></div>`;
   drawLandscape(app.querySelector('.landprint canvas'));
@@ -179,10 +177,7 @@ function discover(){
   function append(){app.querySelector('.stacks').insertAdjacentHTML('beforeend',groups.slice(shown,shown+24).map(g=>stack(g.book,g.hits)).join(''));shown+=24;more.hidden=shown>=groups.length;}
   append();if(!groups.length)app.querySelector('.stacks').textContent='未找到匹配。可以试试原文拼写或作者姓氏。';
   app.querySelector('#search').onsubmit=e=>{e.preventDefault();query=new FormData(e.currentTarget).get('query').trim();if(user&&query)personal.logSearch(query).catch(()=>toast('搜索历史暂未同步'));render();app.querySelector('#results')?.scrollIntoView();};
-  app.querySelector('#theme-pick').onclick=()=>{query='季节与天气';render();app.querySelector('#results').scrollIntoView()};
-  more.onclick=append;app.querySelector('#locate').onclick=locate;
-  app.querySelector('#open-map').onclick=()=>{mapState||={center:{lat:30.25,lon:120.14},zoom:5};render();app.querySelector('#nearby').scrollIntoView();};
-  if(mapState){app.querySelector('#close-map').onclick=()=>{mapState=null;render()};mapObserver=new ResizeObserver(renderMap);mapObserver.observe(app.querySelector('#map'));renderMap();}
+  more.onclick=append;
 }
 
 function distance(a,b) {
@@ -194,21 +189,33 @@ function route() {
   const [name, queryString] = location.hash.slice(1).split('?');
   return {name:name || 'discover', params:new URLSearchParams(queryString)};
 }
-function locate() {
-  if (!navigator.geolocation) {
-    locationMessage = '当前浏览器无法访问定位，可以直接搜索城市或地名。'; render(); return;
-  }
-  locating = true; locationMessage = ''; render();
-  navigator.geolocation.getCurrentPosition(({coords}) => {
-    const center = {lat:coords.latitude,lon:coords.longitude};
-    mapState = {center,user:center,zoom:12,selected:null};
-    locating = false;
-    if (route().name === 'discover') { render(); document.querySelector('#nearby').scrollIntoView({block:'nearest'}); }
-  }, error => {
-    locating = false;
-    locationMessage = error.code === 1 ? '定位权限未开启。你也可以直接搜索地名。' : '暂时无法获取位置，请重试或直接搜索地名。';
-    if (route().name === 'discover') render();
-  }, {timeout:10000,maximumAge:60000});
+let locationAttempted=false;
+function explore(){
+  if(!mapState)mapState={center:{lat:30.25,lon:120.14},zoom:5,selected:null};
+  app.innerHTML=`<section class="explore-page"><header class="explore-head"><div><small>SHOE / CITY NOTES</small><h1>探索身边</h1></div><a class="btn" href="#discover">返回发现</a></header><div class="explore-map-shell"><div id="map" class="map explore-map" aria-label="文学地点地图"></div><div class="explore-controls"><button class="btn" id="recenter" ${locating?'disabled':''}>${icon('locate')} ${locating?'定位中…':'回到我的位置'}</button><form id="place-search"><input name="place" aria-label="搜索城市或地点" placeholder="搜索城市或地点" required><button class="btn">查找</button></form></div>${locationMessage?'<p class="explore-message" role="status">'+esc(locationMessage)+'</p>':''}</div></section>`;
+  mapObserver=new ResizeObserver(renderMap);mapObserver.observe(app.querySelector('#map'));renderMap();
+  app.querySelector('#recenter').onclick=()=>locate(true);
+  app.querySelector('#place-search').onsubmit=e=>{
+    e.preventDefault();const q=new FormData(e.currentTarget).get('place').trim().toLowerCase();
+    const match=anchors.find(a=>[a.city,a.place].some(v=>v?.toLowerCase().includes(q)));
+    if(match){mapState.center={lat:match.lat,lon:match.lon};mapState.zoom=12;mapState.selected=null;locationMessage='';explore();}
+    else{locationMessage='尚未收录这个地点，请试试已收录的城市或地名。';explore();}
+  };
+  if(!mapState.user&&!locating&&!locationAttempted)locate(false);
+}
+function locate(manual=false){
+  if(locating||(!manual&&locationAttempted))return;
+  locationAttempted=true;
+  if(!navigator.geolocation){locationMessage='无法获取当前位置，请搜索城市或地点。';if(route().name==='explore')explore();return;}
+  locating=true;locationMessage='';if(route().name==='explore')explore();
+  navigator.geolocation.getCurrentPosition(({coords})=>{
+    const center={lat:coords.latitude,lon:coords.longitude};
+    mapState={center,user:center,zoom:12,selected:null};locating=false;locationMessage='';
+    if(route().name==='explore')explore();
+  },error=>{
+    locating=false;locationMessage=error.code===1?'定位权限未开启，请搜索城市或地点。':'无法获取当前位置，请搜索城市或地点。';
+    if(route().name==='explore')explore();
+  },{timeout:10000,maximumAge:60000});
 }
 function project({lat,lon},zoom) {
   const n = 256 * 2**zoom;
@@ -532,7 +539,8 @@ async function render() {
     }
     if(version!==renderVersion)return;
   }
-  if (name === 'journal') journal();
+  if (name === 'explore') explore();
+  else if (name === 'journal') journal();
   else if (name === 'library') discover();
   else if (name === 'shelf') shelf();
   else if (name === 'reader') reader(params);
