@@ -1,6 +1,7 @@
 import * as personal from './account-data.js';
 import {accountDialog} from './account-ui.js';
 import {drawLandscape} from './landscape.js';
+import {showPlaceReview} from './place-admin.js';
 import {books,allBooks,anchors,loadBook,pagesOrigin,cloudOrigin} from './books.js';
 
 const app = document.querySelector('#app');
@@ -32,6 +33,8 @@ const pageOf = (book, value) => Math.max(0, Math.min(book.pages.length - 1, Numb
 
 let records = {};
 let user = null;
+let placeAdmin=false;
+let manualPlace=null;
 let query = '';
 let region = '全部';
 let mapState;
@@ -436,7 +439,7 @@ function reader(params) {
     <button class="btn solid" id="save-book" aria-label="${previous.shelf ? '已加入书架' : '加入书架'}" title="${previous.shelf ? '已加入书架' : '加入书架'}">${icon(previous.shelf?"bookmarkCheck":"bookmark")}</button></div>
     <article class="paper"><h1>${esc(book.title)}</h1><details class="edition"><summary>${esc(book.author)} · 版本信息</summary>${esc(book.edition||'原创短篇')} ${book.source?'<a target="_blank" rel="noopener" href="'+esc(book.source)+'">查看底本</a>':''} ${book.count?'<a href="https://www.gutenberg.org/policy/license.html">Gutenberg 使用条款</a>':''}</details>
     <div class="prose" id="prose" lang="${({'英文':'en','法文':'fr','德文':'de','西班牙文':'es','芬兰文':'fi','荷兰文':'nl','意大利文':'it','葡萄牙文':'pt','日文':'ja','瑞典文':'sv','俄文':'ru','丹麦文':'da','la':'la'})[book.lang]||'zh'}">${readingHtml}</div>
-    <div class="actions"><a class="btn" href="${studioLink(book,page,'bookmark')}" aria-label="记一笔" title="记一笔">${icon("pen")}</a><button id="save-quote" class="btn icon-only" aria-label="摘录选文" title="摘录选文">${icon("quote")}</button></div>
+    <div class="actions">${placeAdmin?'<button class="btn" id="manual-place">标记地点</button>':''}<a class="btn" href="${studioLink(book,page,'bookmark')}" aria-label="记一笔" title="记一笔">${icon("pen")}</a><button id="save-quote" class="btn icon-only" aria-label="摘录选文" title="摘录选文">${icon("quote")}</button></div>
     ${cards.length?'<details class="folio"><summary>本页手记 · '+cards.length+'</summary><div class="collections">'+cards.map(collection).join('')+'</div></details>':''}
 
     </article><div class="reader-controls">
@@ -444,6 +447,17 @@ function reader(params) {
     <details><summary aria-label="调整阅读进度">◒　${page+1} / ${book.pages.length}</summary><label>第 <output id="range-page">${page+1}</output> 页<input id="reading-range" aria-label="阅读进度" type="range" min="1" max="${book.pages.length}" value="${page+1}"></label></details>
     ${page < book.pages.length-1 ? `<a class="btn" href="${esc(readLink(book,page+1,term,source))}" aria-label="下一页" title="下一页">${icon("arrowRight")}</a>` : '<button class="btn" disabled aria-label="下一页">${icon("arrowRight")}</button>'}
     </div></section></div>`;
+  const manualButton=app.querySelector('#manual-place');
+  if(manualButton)manualButton.onclick=()=>{
+    const target=app.querySelector('#prose'),selected=window.getSelection();
+    if(!selected||selected.isCollapsed||!target.contains(selected.anchorNode)||!target.contains(selected.focusNode)){toast('请先在正文中选中要标注的地点文字');return;}
+    const text=selected.toString().trim();if(!text||text.length>80){toast('请选择不超过80字的地点名称');return;}
+    const full=target.textContent||'',at=full.indexOf(text);
+    const original=book.pages[page]||'',offset=original.indexOf(text);
+    if(offset<0){toast('无法定位原文位置，请选中单页内的完整地点名称');return;}
+    manualPlace={bookId:book.id,term:text,page,at:offset,context:original.slice(Math.max(0,offset-45),offset+text.length+70)};
+    location.hash='#place-admin';
+  };
   const slider=app.querySelector('#reading-range');if(slider){slider.oninput=()=>app.querySelector('#range-page').textContent=slider.value;slider.onchange=()=>location.hash=readLink(book,Number(slider.value)-1,term,source);}
   const target = document.querySelector('#prose');
   if(precise)requestAnimationFrame(()=>target.querySelector('mark')?.scrollIntoView({block:'nearest'}));
@@ -661,7 +675,8 @@ async function render() {
     catch { if(version===renderVersion)app.innerHTML='<div class="wrap inner">地点索引载入失败，请刷新页面重试。</div>';return; }
     if(version!==renderVersion)return;
   }
-  if (name === 'import') importBook();
+  if (name === 'place-admin') {if(!placeAdmin){app.innerHTML='<div class="wrap inner">仅管理员可以访问地点审核。</div>';}else showPlaceReview(app,manualPlace);manualPlace=null;}
+  else if (name === 'import') importBook();
   else if (name === 'explore') explore();
   else if (name === 'journal') journal();
   else if (name === 'library') discover();
@@ -682,12 +697,13 @@ async function boot(){
   records=localState();
   try {
     user=await personal.sessionUser();
-    if(user){records={};records=await personal.cloudRecords(user.id)}
+    if(user){records={};records=await personal.cloudRecords(user.id);placeAdmin=await personal.isPlaceAdmin()}
   }catch{toast('账号数据暂时无法加载，请刷新重试。')}
   personal.watchSession(user?.id||null);
   const account=document.querySelector('#account');
   account.innerHTML='<button class="account icon-only" aria-label="账户" title="账户">'+icon('user')+'</button>';
   account.firstChild.onclick=showAccount;
+  if(placeAdmin){const a=document.createElement('a');a.href='#place-admin';a.className='btn';a.textContent='地点审核';a.style.marginLeft='8px';account.append(a)}
   render();
   window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0)});
   if(user)window.addEventListener('focus',()=>{if(!document.querySelector('dialog')&&['shelf','journal'].includes(route().name))refreshPersonal().catch(()=>toast('暂时无法同步'))});
