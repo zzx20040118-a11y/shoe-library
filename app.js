@@ -369,10 +369,11 @@ function structuredLinkedText(blocks,ranges,places){
   }).join('');
 }
 function openCommunity(a,book) {
+  const related=(book.anchors||[]).filter(x=>x.page===a.page&&x.at===a.at&&x.term===a.term);
   const dialog = document.createElement('dialog');
   dialog.className = 'place-dialog';
   dialog.innerHTML = `<div class="section-head"><div><p class="sub">《${esc(book.title)}》 · 第 ${a.page+1} 页</p><h2>${esc(a.term)}的读者书签</h2></div><button class="dialog-x" data-close aria-label="关闭">×</button></div>
-  <p class="place-kind"><span aria-hidden="true">${placeKindIcon(a)}</span> ${placeKindLabel(a)}</p>\n  <div class="actions"><a class="btn" href="#explore?anchor=${encodeURIComponent(a.id)}">查看地图</a>
+  <p class="place-kind"><span aria-hidden="true">${placeKindIcon(a)}</span> ${placeKindLabel(a)}</p>\n  ${related.length>1?'<p>这处原文关联 '+related.length+' 个现实地点：</p><div class="place-groups">'+related.map(x=>'<a class="btn" href="#explore?anchor='+encodeURIComponent(x.id)+'">'+esc(x.place)+(x.coordinatePrecision==='approximate'?'（大致位置）':'')+'</a>').join('')+'</div>':''}\n  ${a.note?'<p class="place-note">'+esc(a.note)+'</p>':''}\n  <div class="actions"><a class="btn" href="#explore?anchor=${encodeURIComponent(a.id)}">查看地图</a>
   <a class="btn solid" href="${studioLink(book,a.page,'bookmark')}&anchor=${a.id}">为此处制作书签</a></div>
   <div class="collections" data-cards></div><p role="status" class="sub" data-status></p><button class="btn" data-more hidden>加载更多</button>`;
   app.append(dialog);
