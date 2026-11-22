@@ -577,6 +577,12 @@ async function render() {
     }
     if(version!==renderVersion)return;
   }
+  if(['discover','library','explore'].includes(name) && books.some(b=>b.pilot&&!b.loaded)){
+    app.innerHTML='<div class="wrap inner" role="status">正在载入文学地点索引…</div>';
+    try { await Promise.all(books.filter(b=>b.pilot&&!b.loaded).map(loadBook)); }
+    catch { if(version===renderVersion)app.innerHTML='<div class="wrap inner">地点索引载入失败，请刷新页面重试。</div>';return; }
+    if(version!==renderVersion)return;
+  }
   if (name === 'explore') explore();
   else if (name === 'journal') journal();
   else if (name === 'library') discover();
