@@ -6,10 +6,6 @@ export function accountDialog({user,local,refresh,onSearch,waitWrites}){
   document.body.append(modal);modal.showModal();
   modal.onclose=()=>modal.remove();modal.querySelector('.close-account').onclick=()=>modal.close();
   const title=modal.querySelector('h2'),root=modal.querySelector('.account-content'),status=modal.querySelector('[role=status]');
-  const legacy=document.createElement('a');
-  legacy.href='https://wenxue-jingwei.vividchutney33.chatgpt.site/#shelf';
-  legacy.textContent='访问旧站书架';legacy.target='_blank';legacy.rel='noopener';
-  modal.append(legacy);
   async function perform(button,work){
     button.disabled=true;status.textContent='处理中…';
     try{const message=await work();status.textContent=message||''}
