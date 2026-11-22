@@ -147,13 +147,15 @@ function matches(book) {
   }
   if(needle){
     const words=Object.hasOwn(themes,query)?themes[query]:[];
+    const citySearch=needle&&anchors.some(a=>walkableAnchor(a)&&normalize(a.city)===needle);
     for(const a of book.anchors||[]){
+      if(citySearch&&!walkableAnchor(a))continue;
       const context=a.snippet || book.pages[a.page] || ''; const theme=words.find(w=>normalize(context).includes(w));
       if(theme)add(a.page,theme,context,a);
-      if([a.term,a.place,a.city,a.keywords,a.snippet||''].some(v=>normalize(v).includes(needle))) add(a.page,(a.snippet||'').toLowerCase().includes(needle)?query:a.term,a.snippet,a);
+      if([a.term,a.place,a.city,a.keywords,a.snippet||''].some(v=>normalize(v).includes(needle))) add(a.page,citySearch?a.term:((a.snippet||'').toLowerCase().includes(needle)?query:a.term),a.snippet,a);
     }
-    if(!book.count||book.loaded) book.pages.forEach((p,i)=>{if(normalize(p).includes(needle))add(i,query)});
-    if(!hits.size&&normalize(book.sample||'').includes(needle))add(0,query);
+    if(!citySearch&&(!book.count||book.loaded)) book.pages.forEach((p,i)=>{if(normalize(p).includes(needle))add(i,query)});
+    if(!citySearch&&!hits.size&&normalize(book.sample||'').includes(needle))add(0,query);
   }
   if(!hits.size&&(!needle||[book.title,book.author,book.en].some(v=>normalize(v).includes(needle))))add(0,'');
   return [...hits.values()];
