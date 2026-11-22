@@ -26,25 +26,22 @@ const sites=[
 const normalize=s=>s.replace(/\r\n?/g,'\n').replace(/[ \t]+/g,' ').trim();
 await mkdir('public/books',{recursive:true});
 for(const entry of entries){
- const urls=[
-  'https://raw.githubusercontent.com/GITenberg/'+entry.repo+'/master/'+entry.id.slice(2)+'-0.txt',
-  'https://raw.githubusercontent.com/GITenberg/'+entry.repo+'/master/'+entry.id.slice(2)+'.txt',
-  'https://www.gutenberg.org/cache/epub/'+entry.id.slice(2)+'/pg'+entry.id.slice(2)+'.txt',
-  'https://www.gutenberg.org/ebooks/'+entry.id.slice(2)+'.txt.utf-8'
- ];
- let text='',source='';
- for(const url of urls){
-  try{const r=await fetch(url,{headers:{'User-Agent':'SHOE-literary-atlas/1.0'}});if(!r.ok)continue;const value=await r.text();if(value.length<50000||!value.includes('Project Gutenberg'))continue;text=value;source=url;break}catch{}
+ const source='https://raw.githubusercontent.com/GITenberg/'+entry.repo+'/master/'+entry.id.slice(2)+'-h/'+entry.id.slice(2)+'-h.htm';
+ const response=await fetch(source);if(!response.ok)throw Error('Download '+entry.id+': '+response.status);
+ const html=await response.text();
+ const decode=s=>s.replace(/&#(x[\\da-f]+|\\d+);/gi,(_,n)=>String.fromCodePoint(n[0].toLowerCase()==='x'?parseInt(n.slice(1),16):Number(n))).replace(/&nbsp;/gi,' ').replace(/&mdash;/gi,'—').replace(/&ldquo;/gi,'“').replace(/&rdquo;/gi,'”').replace(/&lsquo;/gi,'‘').replace(/&rsquo;/gi,'’').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');
+ const plain=s=>decode(s.replace(/<br\\s*\\/?\\s*>/gi,' ').replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').trim());
+ const all=[...html.matchAll(/<(h[1-6]|p)\\b[^>]*>([\\s\\S]*?)<\\/\\1>/gi)];
+ const first=all.findIndex(m=>m[1].toLowerCase().startsWith('h')&&/^(chapter|book)\\s+[ivxlcdm\\d]+\\b/i.test(plain(m[2])));
+ if(first<0)throw Error('First chapter not found '+entry.id);
+ const blocks=[];
+ for(const m of all.slice(first)){
+  const value=plain(m[2]);
+  if(/project gutenberg/i.test(value)&&/end of/i.test(value))break;
+  if(!value)continue;
+  blocks.push({kind:m[1].toLowerCase()==='p'?'p':'chapter',text:value});
  }
- if(!text)throw Error('Cannot fetch verified Gutenberg text for '+entry.id);
- const start=text.search(/\*\*\* START OF (THE|THIS) PROJECT GUTENBERG EBOOK/i);
- const end=text.search(/\*\*\* END OF (THE|THIS) PROJECT GUTENBERG EBOOK/i);
- if(start<0||end<0||end<=start)throw Error('Gutenberg license boundaries missing '+entry.id);
- text=text.slice(text.indexOf('\n',start)+1,end);
- // Preserve paragraph boundaries, remove Gutenberg header and split chapter headings.
- const chunks=normalize(text).split(/\n\s*\n/).map(x=>normalize(x.replace(/\n(?!\n)/g,' '))).filter(Boolean);
- const blocks=chunks.map(text=>({kind:/^(chapter\s+[ivxlcdm\d]+\b|book\s+(?:the\s+)?[ivxlcdm\d]+\b)/i.test(text)?'chapter':'p',text}));
- if(blocks.length<350)throw Error('Insufficient source paragraphs '+entry.id+': '+blocks.length);
+ if(blocks.filter(b=>b.kind==='p').length<300)throw Error('Too few paragraphs '+entry.id);
  const pages=[];let page=[],size=0;
  for(const b of blocks){
   if(page.length&&((b.kind==='chapter'&&size>100)||(size+b.text.length>1550&&size>700))){pages.push(page);page=[];size=0}
@@ -62,8 +59,8 @@ for(const entry of entries){
     reviewStatus:'candidate',mapEligible:false,relationType:'direct'});
   }
  }
- const data={id:entry.id,title:entry.title,source,sourceType:'Project Gutenberg UTF-8 plain text',
- sourceSha256:createHash('sha256').update(text).digest('hex'),pages:pageTexts,blocks:pages,locations,
+ const data={id:entry.id,title:entry.title,source,sourceType:'GITenberg structured HTML',
+ sourceSha256:createHash('sha256').update(html).digest('hex'),pages:pageTexts,blocks:pages,locations,
  qa:{paragraphs:blocks.length,pages:pages.length,places:new Set(locations.map(x=>x.place)).size,mentions:locations.length,lossless:true,locationReview:'pending'}};
  await writeFile('public/books/'+entry.id+'.json',JSON.stringify(data));
  console.log(entry.id,JSON.stringify(data.qa));
