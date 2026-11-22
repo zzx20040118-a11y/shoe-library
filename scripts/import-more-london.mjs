@@ -29,10 +29,10 @@ for(const entry of entries){
  const source='https://raw.githubusercontent.com/GITenberg/'+entry.repo+'/master/'+entry.id.slice(2)+'-h/'+entry.id.slice(2)+'-h.htm';
  const response=await fetch(source);if(!response.ok)throw Error('Download '+entry.id+': '+response.status);
  const html=await response.text();
- const decode=s=>s.replace(/&#(x[\\da-f]+|\\d+);/gi,(_,n)=>String.fromCodePoint(n[0].toLowerCase()==='x'?parseInt(n.slice(1),16):Number(n))).replace(/&nbsp;/gi,' ').replace(/&mdash;/gi,'—').replace(/&ldquo;/gi,'“').replace(/&rdquo;/gi,'”').replace(/&lsquo;/gi,'‘').replace(/&rsquo;/gi,'’').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');
- const plain=s=>decode(s.replace(/<br\\s*\\/?\\s*>/gi,' ').replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').trim());
- const all=[...html.matchAll(/<(h[1-6]|p)\\b[^>]*>([\\s\\S]*?)<\\/\\1>/gi)];
- const first=all.findIndex(m=>m[1].toLowerCase().startsWith('h')&&/^(chapter|book)\\s+[ivxlcdm\\d]+\\b/i.test(plain(m[2])));
+ const decode=s=>s.replace(/&#(x[\da-f]+|\d+);/gi,(_,n)=>String.fromCodePoint(n[0].toLowerCase()==='x'?parseInt(n.slice(1),16):Number(n))).replace(/&nbsp;/gi,' ').replace(/&mdash;/gi,'—').replace(/&ldquo;/gi,'“').replace(/&rdquo;/gi,'”').replace(/&lsquo;/gi,'‘').replace(/&rsquo;/gi,'’').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');
+ const plain=s=>decode(s.replace(/<br\s*\/?\s*>/gi,' ').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim());
+ const all=[...html.matchAll(/<(h[1-6]|p)\b[^>]*>([\s\S]*?)<\/\1>/gi)];
+ const first=all.findIndex(m=>m[1].toLowerCase().startsWith('h')&&/^(chapter|book)\s+[ivxlcdm\d]+\b/i.test(plain(m[2])));
  if(first<0)throw Error('First chapter not found '+entry.id);
  const blocks=[];
  for(const m of all.slice(first)){
