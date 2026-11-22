@@ -207,6 +207,14 @@ function route() {
 let locationAttempted=false;
 function explore(){
   if(!mapState)mapState={center:{lat:30.25,lon:120.14},zoom:5,selected:null};
+  const anchorId=route().params.get('anchor');
+  const target=anchorId?anchors.find(a=>a.id===anchorId&&walkableAnchor(a)):null;
+  if(target){
+    mapState.center={lat:target.lat,lon:target.lon};
+    mapState.zoom=15;
+    mapState.selected=target.id;
+    locationMessage='';
+  }
   app.innerHTML=`<section class="explore-page"><header class="explore-head"><div><small>SHOE / CITY NOTES</small><h1>走进书里的街道</h1><p class="explore-intro">从书页走向街道、桥梁与建筑。</p></div><a class="btn icon-only" href="#discover" aria-label="返回发现" title="返回发现">${icon("arrowLeft")}</a></header><div class="explore-map-shell"><div id="map" class="map explore-map" aria-label="文学地点地图"></div><div class="explore-controls"><button class="btn" id="recenter" aria-label="回到我的位置" title="回到我的位置" ${locating?'disabled':''}>${icon("locate")}</button><form id="place-search"><input name="place" aria-label="搜索城市或地点" placeholder="搜索城市或地点" required><button class="btn icon-only" aria-label="查找" title="查找">${icon("search")}</button></form></div>${locationMessage?'<p class="explore-message" role="status">'+esc(locationMessage)+'</p>':''}</div></section>`;
   mapObserver?.disconnect();mapObserver=new ResizeObserver(renderMap);mapObserver.observe(app.querySelector('#map'));renderMap();
   app.querySelector('#recenter').onclick=()=>locate(true);
@@ -217,7 +225,7 @@ function explore(){
     if(match){mapState.center={lat:match.lat,lon:match.lon};mapState.zoom=14;mapState.selected=null;locationMessage=found.length+' 条文学地点记录匹配「'+q+'」，地图已定位至其中一处。';explore();}
     else{locationMessage='尚未收录这个地点，请试试已收录的城市或地名。';explore();}
   };
-  if(!mapState.user&&!locating&&!locationAttempted)locate(false);
+  if(!target&&!mapState.user&&!locating&&!locationAttempted)locate(false);
 }
 function locate(manual=false){
   if(locating||(!manual&&locationAttempted))return;
@@ -254,6 +262,7 @@ function renderMap(){
     let g=groups.find(g=>Math.abs(g.x-x)<43&&Math.abs(g.y-y)<55);
     if(!g){g={x,y,items:[]};groups.push(g)}g.items.push(a);
   }
+  groups.forEach(g=>{if(mapState.selected&&g.items.some(a=>a.id===mapState.selected)){const n=g.items.findIndex(a=>a.id===mapState.selected);if(n>0)g.items.unshift(...g.items.splice(n,1));}});
   groups.forEach((g,i)=>{const b=getBook(g.items[0].bookId);html+='<button class="map-cover" data-group="'+i+'" aria-label="'+esc(g.items[0].place+'，'+b.title)+'" style="left:'+g.x+'px;top:'+g.y+'px">'+cover(b)+(g.items.length>1?'<b>'+g.items.length+'</b>':'')+'</button>';});
   if(mapState.user){const [x,y]=project(mapState.user,zoom);html+='<i class="here" title="你的位置" style="left:'+(x-x0)+'px;top:'+(y-y0)+'px"></i>'}
   const g=groups.find(g=>g.items.some(a=>a.id===mapState.selected)),i=g?.items.findIndex(a=>a.id===mapState.selected),a=g?.items[i];
@@ -360,7 +369,7 @@ function openCommunity(a,book) {
   const dialog = document.createElement('dialog');
   dialog.className = 'place-dialog';
   dialog.innerHTML = `<div class="section-head"><div><p class="sub">《${esc(book.title)}》 · 第 ${a.page+1} 页</p><h2>${esc(a.term)}的读者书签</h2></div><button class="dialog-x" data-close aria-label="关闭">×</button></div>
-  <p class="place-kind"><span aria-hidden="true">${placeKindIcon(a)}</span> ${placeKindLabel(a)}</p>\n  <div class="actions"><a class="btn" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lon}#map=15/${a.lat}/${a.lon}">查看地图</a>
+  <p class="place-kind"><span aria-hidden="true">${placeKindIcon(a)}</span> ${placeKindLabel(a)}</p>\n  <div class="actions"><a class="btn" href="#explore?anchor=${encodeURIComponent(a.id)}">查看地图</a>
   <a class="btn solid" href="${studioLink(book,a.page,'bookmark')}&anchor=${a.id}">为此处制作书签</a></div>
   <div class="collections" data-cards></div><p role="status" class="sub" data-status></p><button class="btn" data-more hidden>加载更多</button>`;
   app.append(dialog);
