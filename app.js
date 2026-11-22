@@ -148,11 +148,12 @@ function matches(book) {
   return [...hits.values()];
 }
 function stack(book,hits){
-  const first=hits[0], quote=h=>paint(h.line,textRanges(h.line,h.term));
-  const heading=cover(book)+'<span class="stack-copy"><strong>'+esc(first.place||book.title)+'</strong><small>'+esc(first.city?first.city+' · '+book.title:book.author)+'</small><span>'+quote(first)+'</span></span>';
+  // One card per real-world place, regardless of how often it appears in the text.
+  // Readers open the card to see every occurrence, then select an occurrence to read.
+  const first=hits[0],quote=h=>paint(h.line,textRanges(h.line,h.term));
   const link=h=>esc(readLink(book,h.page,h.term,query)+(h.term?'&at='+h.offset:''));
-  if(hits.length===1)return '<a class="stack" href="'+link(first)+'">'+heading+'</a>';
-  return '<details class="stacked"><summary class="stack">'+heading+'<em>'+hits.length+' 处匹配</em></summary><div class="passages">'+hits.map(h=>'<a href="'+link(h)+'"><small>第 '+(h.page+1)+' 页</small>'+quote(h)+'</a>').join('')+'</div></details>';
+  const heading=cover(book)+'<span class="stack-copy"><strong>'+esc(first.place||book.title)+'</strong><small>'+esc(first.city?first.city+' · '+book.title:book.author)+'</small><span>'+esc(hits.length+' 处原文提及 · 点击展开')+'</span></span>';
+  return '<details class="stacked place-stack"><summary class="stack">'+heading+'<em>'+hits.length+' 处</em></summary><div class="passages">'+hits.map((h,i)=>'<a href="'+link(h)+'"><small>第 '+(h.page+1)+' 页 · 第 '+(i+1)+' 处</small>'+quote(h)+'</a>').join('')+'</div></details>';
 }
 
 function cover(book) {
@@ -163,11 +164,15 @@ function bookCard({book,page,term,source,meta}) {
   return `<a class="book-card" href="${esc(readLink(book,page,term,source))}">${cover(book)}<div class="book-info"><h3>${esc(book.title)}</h3><p>${esc(meta || book.author)}</p><span class="place">${book.place ? icon('pin')+esc(book.city)+' · '+esc(book.place) : esc(book.lang || '中文')+' · '+book.pages.length+' 页'}</span><p class="snippet">${paint(text,textRanges(text,term))}</p></div></a>`;
 }
 function discover(){
-  const groups=books.map(book=>({book,hits:matches(book)})).filter(g=>g.hits.length);
+  const groups=books.flatMap(book=>{
+    const byPlace=new Map();
+    for(const hit of matches(book)){const key=hit.place||'__book__';if(!byPlace.has(key))byPlace.set(key,[]);byPlace.get(key).push(hit)}
+    return [...byPlace.values()].map(hits=>({book,hits}));
+  });
   const featured=books.filter(b=>b.anchors?.length).slice(0,3);
   app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="搜索城市或具体地点，例如 London" value="${esc(query)}"><button>搜索</button></form><div class="entry"><a class="explore-link" href="#explore">${icon('locate')} 探索身边</a></div></div><figure class="landprint"><canvas aria-label="原创套色版画：层山与落日" role="img"></canvas><figcaption>山行 · 套色习作</figcaption></figure></section>
   ${!query&&featured.length?'<section class="picks"><h2>漫游选读</h2><div>'+featured.map(b=>{const a=b.anchors[0];return '<a href="'+esc(readLink(b,a.page,a.term,a.place))+'"><small>'+esc(a.city)+' · '+esc(a.place)+'</small><h3>'+esc(b.title)+'</h3><p>'+esc(excerpt(b,a.page,a.term,a.snippet,a.at))+'</p></a>'}).join('')+'</div></section>':''}
-  <section class="section" id="results"><div class="section-head"><h2>${query?'搜索结果':'全部作品'}</h2><small>${groups.length} 部作品与版本</small></div><div class="stacks"></div><button class="btn" id="more">继续浏览</button></section></div>`;
+  <section class="section" id="results"><div class="section-head"><h2>${query?'搜索结果':'全部作品'}</h2><small>${groups.length} 个地点</small></div><div class="stacks"></div><button class="btn" id="more">继续浏览</button></section></div>`;
   drawLandscape(app.querySelector('.landprint canvas'));
   let shown=0;const more=app.querySelector('#more');
   function append(){app.querySelector('.stacks').insertAdjacentHTML('beforeend',groups.slice(shown,shown+24).map(g=>stack(g.book,g.hits)).join(''));shown+=24;more.hidden=shown>=groups.length;}
