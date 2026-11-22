@@ -13,7 +13,12 @@ const londonClassics=[
  {id:'pg883',title:'我们共同的朋友',author:'Charles Dickens',en:'OUR MUTUAL FRIEND',edition:'Project Gutenberg · 英文原版',col:'blue',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://www.gutenberg.org/ebooks/883'},
  {id:'pg700',title:'老古玩店',author:'Charles Dickens',en:'THE OLD CURIOSITY SHOP',edition:'Project Gutenberg · 英文原版',col:'brown',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://www.gutenberg.org/ebooks/700'}
 ];
-export const books=[sherlock,...dickens,...londonClassics];
+const chineseClassics=[
+ {id:'zh-chaohua',title:'朝花夕拾',author:'鲁迅',en:'朝花夕拾',edition:'维基文库 · 中文原作',col:'green',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://zh.wikisource.org/zh-hans/朝花夕拾'},
+ {id:'zh-chunfeng',title:'春风沉醉的晚上',author:'郁达夫',en:'春风沉醉的晚上',edition:'维基文库 · 中文原作',col:'brown',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://zh.wikisource.org/zh-hans/春風沉醉的晚上'},
+ {id:'zh-qinhuai',title:'桨声灯影里的秦淮河',author:'朱自清',en:'桨声灯影里的秦淮河',edition:'维基文库 · 中文原作',col:'blue',art:'window',pages:['正在加载正文…'],count:1,anchors:[],pilot:true,source:'https://zh.wikisource.org/zh-hans/槳聲燈影裏的秦淮河'}
+];
+export const books=[sherlock,...dickens,...londonClassics,...chineseClassics];
 export const allBooks=books;
 export const anchors=[];
 export const pagesOrigin='https://zzx20040118-a11y.github.io';
