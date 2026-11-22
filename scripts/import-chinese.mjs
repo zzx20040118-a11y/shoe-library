@@ -28,6 +28,8 @@ async function fetchHtml(page){
  return {html:json.parse.text['*'],url:'https://zh.wikisource.org/wiki/'+encodeURIComponent(page)};
 }
 function parseBlocks(html){
+ // Strip embedded MediaWiki styles and scripts before parsing text nodes.
+ html=html.replace(/<(style|script|noscript|template)\\b[^>]*>[\\s\\S]*?<\\/\\1>/gi,'');
  const output=[];
  // Ignore page navigation, footnotes and table of contents, retain only source paragraphs and section headings.
  for(const m of html.matchAll(/<(p|h2|h3|h4|div)\b([^>]*)>([\s\S]*?)<\/\1>/gi)){
@@ -36,6 +38,7 @@ function parseBlocks(html){
   if(/class=["'][^"']*(?:mw-empty-elt|toc|mw-collapsible|reference|mw-heading|navbox|license)[^"']*["']/i.test(attr))continue;
   const txt=clean(inside);
   if(!txt||/^(?:编辑|目次|目录|下载|注释|参考资料|维基文库)$/.test(txt))continue;
+  if(/\\.mw-parser-output\\s|\\.variant-text\\s*\\{|(?:background|cursor|z-index|border-bottom)\\s*:/.test(txt))continue;
   if(tag==='div'&&txt.length>1800)continue;
   output.push({kind:tag.startsWith('h')?'chapter':'p',text:txt});
  }
@@ -94,6 +97,7 @@ for(const work of works){
    sources.push(source.url);
  }
  if(blocks.filter(b=>b.kind==='p').length<(work.id==='zh-chaohua'?120:5))throw Error('Insufficient paragraphs: '+work.id);
+ if(blocks.some(b=>/\\.mw-parser-output|\\.variant-text\\s*\\{|(?:z-index|border-bottom)\\s*:/.test(b.text)))throw Error('Styles leaked into book text: '+work.id);
  const paged=paginate(blocks);
  const pages=paged.map(p=>p.map(b=>b.text).join('\n\n'));
  if(pages.join('\n\n')!==blocks.map(b=>b.text).join('\n\n'))throw Error('Text QA failed '+work.id);
