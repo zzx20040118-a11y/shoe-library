@@ -198,7 +198,7 @@ function explore(){
   app.querySelector('#place-search').onsubmit=e=>{
     e.preventDefault();const q=new FormData(e.currentTarget).get('place').trim().toLowerCase();
     const match=anchors.find(a=>[a.city,a.place].some(v=>v?.toLowerCase().includes(q)));
-    if(match){mapState.center={lat:match.lat,lon:match.lon};mapState.zoom=12;mapState.selected=null;locationMessage='';explore();}
+    if(match){mapState.center={lat:match.lat,lon:match.lon};mapState.zoom=14;mapState.selected=null;locationMessage='';explore();}
     else{locationMessage='尚未收录这个地点，请试试已收录的城市或地名。';explore();}
   };
   if(!mapState.user&&!locating&&!locationAttempted)locate(false);
@@ -210,7 +210,7 @@ function locate(manual=false){
   locating=true;locationMessage='';if(route().name==='explore')explore();
   navigator.geolocation.getCurrentPosition(({coords})=>{
     const center={lat:coords.latitude,lon:coords.longitude};
-    mapState={center,user:center,zoom:12,selected:null};locating=false;locationMessage='';
+    mapState={center,user:center,zoom:14,selected:null};locating=false;locationMessage='';
     if(route().name==='explore')explore();
   },error=>{
     locating=false;locationMessage=error.code===1?'定位权限未开启，请搜索城市或地点。':'无法获取当前位置，请搜索城市或地点。';
