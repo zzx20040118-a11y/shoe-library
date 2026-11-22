@@ -514,3 +514,22 @@ h1,h2,h3,.stack-copy strong,.cover strong,.brand,.prose{ text-shadow:none!import
 }
 .spread::before,.spread::after{display:none!important;content:none!important}
 .spread .entry::after{display:none!important;content:none!important}
+
+
+/* Book submission — quiet, unframed and consistent with the icon-first navigation. */
+.import-page{max-width:950px}
+.import-form{display:grid;grid-template-columns:1fr 1fr;gap:22px 28px;max-width:820px;margin:32px 0 45px}
+.import-form label{display:flex;flex-direction:column;gap:9px;font-size:14px;color:#365441}
+.import-form label:nth-child(n+4){grid-column:1/-1}
+.import-form input,.import-form select,.import-form textarea{
+ display:block;box-sizing:border-box;width:100%;font:inherit;color:#304a3b;
+ background:#f8f0de url('/textures/paper-grain.svg') repeat;border:0;border-bottom:2px solid #829a7c;
+ border-radius:0;padding:13px 10px;outline-offset:4px;
+}
+.import-form input[type=file]{cursor:pointer}
+.import-form textarea{resize:vertical}
+.import-form>.sub,.import-form>button,.import-form>#import-feedback{grid-column:1/-1}
+.import-form>button{justify-self:start}
+.import-history-row{display:grid;grid-template-columns:2fr 1fr 1fr 1.5fr;gap:12px;align-items:center;padding:17px 0;border-bottom:1px solid #b7a88b}
+.import-history-row small{color:#756f60}
+@media(max-width:650px){.import-form{grid-template-columns:1fr}.import-history-row{grid-template-columns:1fr 1fr}.import-history-row strong{grid-column:1/-1}}
