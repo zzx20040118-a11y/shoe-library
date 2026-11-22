@@ -9,7 +9,10 @@ if(!raw)throw Error('Source download failed; no book published');
 const start=raw.search(/\*\*\*\s*START OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[^\n]*\*\*\*/i);
 const end=raw.search(/\*\*\*\s*END OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[^\n]*\*\*\*/i);
 if(start<0||end<=start)throw Error('Gutenberg delimiters missing');
-const original=raw.slice(raw.indexOf('\n',start)+1,end).replace(/\r\n?/g,'\n').trim();
+// Gutenberg plain text uses hard-wrapped print lines, not paragraph breaks.
+// Join soft line wraps within each paragraph, preserve blank-line paragraph breaks.
+const sourceBody=raw.slice(raw.indexOf('\n',start)+1,end).replace(/\r\n?/g,'\n').trim();
+const original=sourceBody.split(/\n[ \t]*\n+/).map(block=>block.split('\n').map(line=>line.trim()).filter(Boolean).join(' ')).join('\n\n');
 if(original.length<100000||!original.includes('Baker Street'))throw Error('Unexpected source text');
 const sha256=s=>createHash('sha256').update(s).digest('hex');
 const headings=[...original.matchAll(/^(?:THE ADVENTURES OF SHERLOCK HOLMES|A SCANDAL IN BOHEMIA|THE RED-HEADED LEAGUE|A CASE OF IDENTITY|THE BOSCOMBE VALLEY MYSTERY|THE FIVE ORANGE PIPS|THE MAN WITH THE TWISTED LIP|THE ADVENTURE OF THE BLUE CARBUNCLE|THE ADVENTURE OF THE SPECKLED BAND|THE ADVENTURE OF THE ENGINEER'S THUMB|THE ADVENTURE OF THE NOBLE BACHELOR|THE ADVENTURE OF THE BERYL CORONET|THE ADVENTURE OF THE COPPER BEECHES)\s*$/gm)].map(m=>({title:m[0],offset:m.index}));
