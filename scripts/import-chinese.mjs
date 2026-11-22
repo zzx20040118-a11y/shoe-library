@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 
 const works=[
  {id:'zh-chaohua',title:'朝花夕拾',author:'鲁迅',sourcePage:'朝花夕拾',
-  chapters:['小引','狗·猫·鼠','阿长与《山海经》','二十四孝图','五猖会','无常','从百草园到三味书屋','父亲的病','琐记','藤野先生','范爱农','后记']},
+  chapters:['小引','狗·貓·鼠','阿長與《山海經》','二十四孝圖','五猖會','無常','從百草園到三味書屋','父親的病','瑣記','藤野先生','范愛農','後記']},
  {id:'zh-chunfeng',title:'春风沉醉的晚上',author:'郁达夫',sourcePage:'春風沉醉的晚上'},
  {id:'zh-qinhuai',title:'桨声灯影里的秦淮河',author:'朱自清',sourcePage:'槳聲燈影裏的秦淮河'}
 ];
