@@ -14,6 +14,7 @@ export async function loadBook(book){
   const data=await response.json();
   if(!Array.isArray(data.pages)||!data.pages.length||!data.pages.every(x=>typeof x==='string'))throw Error('测试正文格式错误');
   book.pages=data.pages;
+  book.blocks=data.blocks||null;
   book.count=data.pages.length;
   book.anchors=(data.locations||[]).filter(x=>x.mapEligible&&x.reviewStatus==='approved').map((x,i)=>({...x,id:'pg1661-'+i,bookId:'pg1661',region:'欧洲',keywords:x.city}));
   anchors.splice(0,anchors.length,...book.anchors);
