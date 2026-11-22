@@ -1,1 +1,10 @@
-{"name":"wenxue-jingwei","private":true,"type":"module","scripts":{"build":"node build.mjs","preview":"node build.mjs && node preview.mjs"}}
+{
+  "name": "wenxue-jingwei",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "preview": "node build.mjs && node preview.mjs",
+    "prepare:book": "node scripts/prepare-book.mjs"
+  }
+}
