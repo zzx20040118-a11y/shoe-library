@@ -327,6 +327,25 @@ function linkedText(text, ranges, places) {
   const parts=html.split(/(?:\r?\n[ \t]*){2,}/);
   return parts.map(part=>'<p class="novel-paragraph">'+part.replace(/^\s+|\s+$/g,'').replace(/\r?\n/g,' ')+'</p>').join('');
 }
+// Apply location links and search highlights inside original publisher paragraphs.
+function structuredLinkedText(blocks,ranges,places){
+  let offset=0;
+  return blocks.map(b=>{
+    const from=offset,to=from+b.text.length;
+    const localRanges=ranges.filter(([a,z])=>a<to&&z>from).map(([a,z])=>[Math.max(0,a-from),Math.min(b.text.length,z-from)]);
+    const localPlaces=places.filter(a=>a.at>=from&&a.at+a.term.length<=to).map(a=>({...a,at:a.at-from}));
+    let cursor=0,html='';
+    const segment=(a,z)=>paint(b.text.slice(a,z),localRanges.map(([x,y])=>[Math.max(x,a)-a,Math.min(y,z)-a]));
+    for(const a of localPlaces.sort((x,y)=>x.at-y.at)){
+      if(a.at<cursor)continue;
+      html+=segment(cursor,a.at)+'<button class="literary-link" data-anchor="'+esc(a.id)+'" title="'+esc(a.place)+'">'+segment(a.at,a.at+a.term.length)+'</button>';
+      cursor=a.at+a.term.length;
+    }
+    html+=segment(cursor,b.text.length);
+    offset=to+2;
+    return b.kind==='chapter'?'<h2 class="novel-chapter">'+html+'</h2>':b.kind==='section'?'<h3 class="novel-section">'+html+'</h3>':'<p class="novel-paragraph">'+html+'</p>';
+  }).join('');
+}
 function openCommunity(a,book) {
   const dialog = document.createElement('dialog');
   dialog.className = 'place-dialog';
@@ -359,7 +378,7 @@ function openCommunity(a,book) {
 // Keep original page IDs and text offsets stable while moving visible page breaks
 // to the next natural sentence boundary. This does not rewrite book files or anchors.
 function sentenceCarry(book,index){
-  if(index<=0||index>=book.pages.length)return 0;
+  if(book.blocks||index<=0||index>=book.pages.length)return 0;
   const before=book.pages[index-1]||'',after=book.pages[index]||'';
   if(!before||!after||/[。！？.!?…][”’"')）】]*\s*$|\n\s*$/u.test(before))return 0;
   const prefix=after.slice(0,Math.min(after.length,280));
@@ -369,7 +388,7 @@ function sentenceCarry(book,index){
   return whitespace>=0&&whitespace<80?whitespace+1:0;
 }
 function readingSlice(book,page){
-  if(!book.count)return {text:book.pages[page]||'',start:0,next:0};
+  if(book.blocks?.[page]||!book.count)return {text:book.pages[page]||'',start:0,next:0};
   const start=sentenceCarry(book,page),next=sentenceCarry(book,page+1);
   return {text:(book.pages[page]||'').slice(start)+(book.pages[page+1]||'').slice(0,next),start,next};
 }
@@ -392,7 +411,7 @@ function reader(params) {
   const precise=allHits.find(([start])=>start===indexAt);
   const hit=precise ? [precise] : allHits;
   const originalBlocks=book.blocks?.[page];
-  const readingHtml=originalBlocks?originalBlocks.map(b=>b.kind==='chapter'?'<h2 class="novel-chapter">'+esc(b.text)+'</h2>':b.kind==='section'?'<h3 class="novel-section">'+esc(b.text)+'</h3>':'<p class="novel-paragraph">'+esc(b.text)+'</p>').join(''):linkedText(text,[...hit,...selectedRanges],places);
+  const readingHtml=originalBlocks?structuredLinkedText(originalBlocks,[...hit,...selectedRanges],places):linkedText(text,[...hit,...selectedRanges],places);
   app.innerHTML = `<div class="wrap inner"><section class="reader">
     <div class="actions"><a class="btn" href="${previous.shelf && !source ? '#shelf' : '#discover'}">${previous.shelf && !source ? '返回书架' : '返回发现'}</a>
     <button class="btn solid" id="save-book">${previous.shelf ? '已加入书架' : '加入书架'}</button></div>
