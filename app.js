@@ -107,20 +107,46 @@ function excerpt(book,page,term,hint='',offset) {
   const at=book.pages[page] && Number.isInteger(offset) ? offset : Math.max(0,text.toLowerCase().indexOf(term.toLowerCase()));
   return text.slice(Math.max(0,at-26),at+Math.max(term.length,1)+75).trim();
 }
+const indexWords = /[\p{L}\p{N}]+(?:[’'-][\p{L}\p{N}]+)*/gu;
+function shortExcerpt(text, at, term, clippedLeft=false, clippedRight=false) {
+  const end=at+term.length, before=text.slice(0,at), after=text.slice(end);
+  const cjk=/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(text.slice(Math.max(0,at-18),end+24));
+  let left,right;
+  if(cjk){
+    left=before.length-[...before].slice(-16).join('').length;
+    right=end+[...after].slice(0,term?16:32).join('').length;
+  }else{
+    const preceding=[...before.matchAll(indexWords)], following=[...after.matchAll(indexWords)];
+    left=preceding.length>4 ? preceding.at(-4).index : 0;
+    const count=term?4:8;
+    right=following.length>count ? end+following[count-1].index+following[count-1][0].length : text.length;
+    // An indexed sample can itself start or end halfway through a word.
+    if(clippedLeft && left===0 && preceding[0]?.index===0)left=preceding[0][0].length;
+    if(clippedRight && right===text.length && following.at(-1)?.index+following.at(-1)?.[0].length===after.length)right=end+following.at(-1).index;
+  }
+  return (left||clippedLeft?'…':'')+text.slice(left,right).trim()+(right<text.length||clippedRight?'…':'');
+}
+
 const themes={'城市日常':['茶','市集','market'],'食物与味觉':['酒','茶','早餐','breakfast'],'街道与建筑':['街','桥','楼','street','bridge'],'季节与天气':['雪','雨','春','snow','rain'],'旅行与行走':['舟','旅','步行','walk'],'故乡与记忆':['故乡','乡愁','记忆','memory']};
 function matches(book) {
   const needle=normalize(query), hits=new Map();
-  function add(page,term,hint='',offset) {
-    const line=excerpt(book,page,term,hint,offset);
-    const key=page+'|'+line;
-    if(!hits.has(key)) hits.set(key,{page,term,line});
+  function add(page,term,hint='',anchor) {
+    const full=book.pages[page], text=full || hint || book.sample || '';
+    const folded=text.toLowerCase(), word=term.toLowerCase();
+    const anchorInHint=anchor && hint ? hint.indexOf(anchor.term) : -1;
+    const base=anchorInHint>=0 ? anchor.at-anchorInHint : 0;
+    let at=full && anchor ? (anchor.term===term ? anchor.at : base+hint.toLowerCase().indexOf(word)) : folded.indexOf(word);
+    if(at<0 || folded.slice(at,at+word.length)!==word)at=Math.max(0,folded.indexOf(word));
+    const offset=full?at:base+at;
+    const key=page+'|'+offset+'|'+term;
+    if(!hits.has(key))hits.set(key,{page,term,offset,line:shortExcerpt(text,at,term,!full&&base>0,!full&&!!book.count)});
   }
   if(needle){
     const words=Object.hasOwn(themes,query)?themes[query]:[];
     for(const a of book.anchors||[]){
       const context=a.snippet || book.pages[a.page] || ''; const theme=words.find(w=>normalize(context).includes(w));
-      if(theme)add(a.page,theme,context);
-      if([a.term,a.place,a.city,a.keywords,a.snippet||''].some(v=>normalize(v).includes(needle))) add(a.page,(a.snippet||'').toLowerCase().includes(needle)?query:a.term,a.snippet,a.at);
+      if(theme)add(a.page,theme,context,a);
+      if([a.term,a.place,a.city,a.keywords,a.snippet||''].some(v=>normalize(v).includes(needle))) add(a.page,(a.snippet||'').toLowerCase().includes(needle)?query:a.term,a.snippet,a);
     }
     if(!book.count||book.loaded) book.pages.forEach((p,i)=>{if(normalize(p).includes(needle))add(i,query)});
     if(!hits.size&&normalize(book.sample||'').includes(needle))add(0,query);
@@ -130,8 +156,8 @@ function matches(book) {
 }
 function stack(book,hits){
   const first=hits[0], quote=h=>paint(h.line,textRanges(h.line,h.term));
-  const heading=cover(book)+'<span class="stack-copy"><strong>'+esc(book.title)+'</strong><small>'+esc(book.author)+'</small><span>'+quote(first)+'</span></span>';
-  const link=h=>esc(readLink(book,h.page,h.term,query));
+  const heading=cover(book)+'<span class="stack-copy"><strong>'+paint(book.title,textRanges(book.title,query))+'</strong><small>'+paint(book.author,textRanges(book.author,query))+'</small><span>'+quote(first)+'</span></span>';
+  const link=h=>esc(readLink(book,h.page,h.term,query)+(h.term?'&at='+h.offset:''));
   if(hits.length===1)return '<a class="stack" href="'+link(first)+'">'+heading+'</a>';
   return '<details class="stacked"><summary class="stack">'+heading+'<em>'+hits.length+' 处匹配</em></summary><div class="passages">'+hits.map(h=>'<a href="'+link(h)+'"><small>第 '+(h.page+1)+' 页</small>'+quote(h)+'</a>').join('')+'</div></details>';
 }
@@ -312,7 +338,10 @@ function reader(params) {
   const cards = craftsFor(book,page);
   const selectedRanges = cards.map(([,card]) => card.range).filter(Boolean);
   const places = book.anchors?.filter(a => a.page === page) || [];
-  const hit = textRanges(text,term);
+  const indexAt=params.has('at') ? Number(params.get('at')) : -1;
+  const allHits=textRanges(text,term);
+  const precise=allHits.find(([start])=>start===indexAt);
+  const hit=precise ? [precise] : allHits;
   app.innerHTML = `<div class="wrap inner"><section class="reader">
     <div class="actions"><a class="btn" href="${previous.shelf && !source ? '#shelf' : '#discover'}">${previous.shelf && !source ? '返回书架' : '返回发现'}</a>
     <button class="btn solid" id="save-book">${previous.shelf ? '已加入书架' : '加入书架'}</button></div>
@@ -328,6 +357,7 @@ function reader(params) {
     </div></section></div>`;
   const slider=app.querySelector('#reading-range');if(slider){slider.oninput=()=>app.querySelector('#range-page').textContent=slider.value;slider.onchange=()=>location.hash=readLink(book,Number(slider.value)-1,term,source);}
   const target = document.querySelector('#prose');
+  if(precise)requestAnimationFrame(()=>target.querySelector('mark')?.scrollIntoView({block:'nearest'}));
   target.querySelectorAll('[data-anchor]').forEach(btn => btn.onclick = () => { if (!window.getSelection()?.toString()) openCommunity(places.find(a=>a.id===btn.dataset.anchor),book); });
   function selectedText() {
     const current = window.getSelection();
