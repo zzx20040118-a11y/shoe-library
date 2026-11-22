@@ -55,6 +55,28 @@ const places={
  '春风沉醉的晚上':['静安寺路','跑马厅','外白渡桥','邓脱路','日新里'],
  '桨声灯影里的秦淮河':['秦淮河','利涉桥','东关头','大中桥','复成桥','颐和园','西湖','瘦西湖']
 };
+// Verified real-world literary locations. Ambiguous or unverified mentions remain candidates.
+const verifiedPlaces={
+ '朝花夕拾':{
+  '百草园':['绍兴',29.9971,120.5855],
+  '三味书屋':['绍兴',29.9975,120.5858],
+  '仙台':['仙台',38.2682,140.8694],
+  '绍兴':['绍兴',29.9958,120.5861],
+  '南京':['南京',32.0603,118.7969],
+  '东京':['东京',35.6762,139.6503],
+  '北京':['北京',39.9042,116.4074]
+ },
+ '春风沉醉的晚上':{
+  '静安寺路':['上海',31.2235,121.4465],
+  '外白渡桥':['上海',31.2446,121.4901],
+  '跑马厅':['上海',31.2318,121.4726]
+ },
+ '桨声灯影里的秦淮河':{
+  '秦淮河':['南京',32.0204,118.7883],
+  '利涉桥':['南京',32.0228,118.7908],
+  '大中桥':['南京',32.0276,118.8004]
+ }
+};
 await mkdir('public/books',{recursive:true});
 for(const work of works){
  let blocks=[],sources=[];
@@ -80,8 +102,9 @@ for(const work of works){
   for(let p=0;p<pages.length;p++){
    let start=0,index;
    while((index=pages[p].indexOf(term,start))!==-1){
-    locations.push({term,place:term,page:p,at:index,city:'',snippet:pages[p].slice(Math.max(0,index-45),Math.min(pages[p].length,index+term.length+80)),
-     reviewStatus:'candidate',mapEligible:false,relationType:'direct'});
+    const match=verifiedPlaces[work.title]?.[term];
+    locations.push({term,place:term,page:p,at:index,city:match?.[0]||'',...(match?{lat:match[1],lon:match[2]}:{}),snippet:pages[p].slice(Math.max(0,index-45),Math.min(pages[p].length,index+term.length+80)),
+     reviewStatus:match?'approved':'candidate',mapEligible:!!match,relationType:'direct'});
     start=index+term.length;
    }
   }
