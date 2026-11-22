@@ -12,7 +12,7 @@ if(start<0||end<=start)throw Error('Gutenberg delimiters missing');
 const original=raw.slice(raw.indexOf('\n',start)+1,end).replace(/\r\n?/g,'\n').trim();
 if(original.length<100000||!original.includes('Baker Street'))throw Error('Unexpected source text');
 const sha256=s=>createHash('sha256').update(s).digest('hex');
-const headings=[...original.matchAll(/^(?:THE ADVENTURES OF SHERLOCK HOLMES|A SCANDAL IN BOHEMIA|THE RED-HEADED LEAGUE|A CASE OF IDENTITY|THE BOSCOMBE VALLEY MYSTERY|THE FIVE ORANGE PIPS|THE MAN WITH THE TWISTED LIP|THE ADVENTURE OF THE BLUE CARBUNCLE|THE ADVENTURE OF THE SPECKLED BAND|THE ADVENTURE OF THE ENGINEER'S THUMB|THE ADVENTURE OF THE NOBLE BACHELOR|THE ADVENTURE OF THE BERYL CORONET|THE ADVENTURE OF THE COPPER BEECHES)\s*$/gm].map(m=>({title:m[0],offset:m.index}));
+const headings=[...original.matchAll(/^(?:THE ADVENTURES OF SHERLOCK HOLMES|A SCANDAL IN BOHEMIA|THE RED-HEADED LEAGUE|A CASE OF IDENTITY|THE BOSCOMBE VALLEY MYSTERY|THE FIVE ORANGE PIPS|THE MAN WITH THE TWISTED LIP|THE ADVENTURE OF THE BLUE CARBUNCLE|THE ADVENTURE OF THE SPECKLED BAND|THE ADVENTURE OF THE ENGINEER'S THUMB|THE ADVENTURE OF THE NOBLE BACHELOR|THE ADVENTURE OF THE BERYL CORONET|THE ADVENTURE OF THE COPPER BEECHES)\s*$/gm)].map(m=>({title:m[0],offset:m.index}));
 const target=1500;
 const paragraphs=[...original.matchAll(/\n[ \t]*\n/g)].map(m=>m.index+m[0].length);
 const offsets=[0];let from=0;
