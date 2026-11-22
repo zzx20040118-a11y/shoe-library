@@ -1,11 +1,14 @@
 import {execFileSync} from 'node:child_process';
 execFileSync(process.execPath,['scripts/pilot-sherlock.mjs'],{stdio:'inherit'});
+execFileSync(process.execPath,['scripts/import-london.mjs'],{stdio:'inherit'});
 import {readFile, mkdir, writeFile, copyFile} from 'node:fs/promises';
 
 import {allBooks,anchors} from './books.js';
 
 const files = {
   '/books/pg1661.json':['public/books/pg1661.json','application/json;charset=utf-8'],
+  '/books/pg730.json':['public/books/pg730.json','application/json;charset=utf-8'],
+  '/books/pg46.json':['public/books/pg46.json','application/json;charset=utf-8'],
   '/':['index.html','text/html;charset=utf-8'],
   '/style.css':['style.css','text/css;charset=utf-8'],
   '/app.js':['app.js','text/javascript;charset=utf-8'],
