@@ -1,10 +1,10 @@
 import {mkdir,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const entries=[
- {id:'pg1023',title:'Bleak House'},
- {id:'pg963',title:'Little Dorrit'},
- {id:'pg883',title:'Our Mutual Friend'},
- {id:'pg700',title:'The Old Curiosity Shop'}
+ {id:'pg1023',title:'Bleak House',repo:'Bleak-House_1023'},
+ {id:'pg963',title:'Little Dorrit',repo:'Little-Dorrit_963'},
+ {id:'pg883',title:'Our Mutual Friend',repo:'Our-Mutual-Friend_883'},
+ {id:'pg700',title:'The Old Curiosity Shop',repo:'The-Old-Curiosity-Shop_700'}
 ];
 const sites=[
  ['Chancery Lane',51.5173,-0.1119],['Lincoln’s Inn',51.5166,-0.1151],["Lincoln's Inn",51.5166,-0.1151],
@@ -27,6 +27,8 @@ const normalize=s=>s.replace(/\r\n?/g,'\n').replace(/[ \t]+/g,' ').trim();
 await mkdir('public/books',{recursive:true});
 for(const entry of entries){
  const urls=[
+  'https://raw.githubusercontent.com/GITenberg/'+entry.repo+'/master/'+entry.id.slice(2)+'-0.txt',
+  'https://raw.githubusercontent.com/GITenberg/'+entry.repo+'/master/'+entry.id.slice(2)+'.txt',
   'https://www.gutenberg.org/cache/epub/'+entry.id.slice(2)+'/pg'+entry.id.slice(2)+'.txt',
   'https://www.gutenberg.org/ebooks/'+entry.id.slice(2)+'.txt.utf-8'
  ];
