@@ -291,3 +291,115 @@ h1,h2,h3,.stack-copy strong,.cover strong{
 @media(prefers-reduced-motion:reduce){
  #search .icon-submit,.reader-controls>.btn,.reader .actions>.btn{transition:none!important;transform:none!important}
 }
+
+
+/* SHOE / RISO UNFRAMED — flat ink, living contours, no gradients or embossed type */
+:root{--bg:#eee5d2;--paper:#f8f0de;--ink:#304a3b;--quiet:#726e61;--rule:#c4b49b;--green:#41624e;--clay:#b46c50}
+html,body{background-color:var(--bg)}
+body{background-image:url('/textures/paper-grain.svg');background-size:256px 256px;background-blend-mode:multiply}
+body:before{opacity:.09}
+h1,h2,h3,.stack-copy strong,.cover strong,.brand,.prose{ text-shadow:none!important;filter:none }
+.top{
+ background:#42634e!important;
+ background-image:url('/textures/paper-grain.svg')!important;
+ background-size:256px 256px!important;
+ background-blend-mode:multiply;
+ border:0!important;box-shadow:none!important;
+}
+.nav{height:76px}
+.brand,.brand small{color:#f7edcf!important;text-shadow:none!important}
+.brand-icon{background:#d6b66f!important;color:#2f503e!important;border:0!important;box-shadow:none!important;transform:rotate(-6deg)}
+.brand-icon .icon{width:23px;height:23px}
+.nav nav{gap:11px}
+.nav nav a{
+ color:#f5e8c9!important;background:transparent!important;border:0!important;
+ border-radius:48% 52% 46% 54% / 54% 45% 55% 46%!important;
+ width:45px;height:45px;opacity:.88;
+}
+.nav nav a .icon{width:24px!important;height:24px!important;stroke-width:2.1}
+.nav nav a:hover,.nav nav a.active{
+ color:#2e4a38!important;background:#e8c47b!important;
+ opacity:1;transform:rotate(-5deg)!important;box-shadow:2px 2px 0 #b76f50!important;
+}
+.nav nav a.active:after{content:none!important}
+.account.icon-only{
+ color:#f7edcf!important;background:transparent!important;
+ border:0!important;box-shadow:none!important;
+ width:45px;height:45px;
+}
+.account.icon-only:hover{color:#2e4a38!important;background:#e8c47b!important;transform:rotate(5deg)}
+.account.icon-only .icon{width:24px;height:24px;stroke-width:2.1}
+.spread{border-bottom:0!important}
+.spread:before{border-radius:47% 53% 45% 55%;background:#b46c50!important;transform:rotate(-2deg)}
+.spread:after{border:2px solid #79947d!important;background:none!important}
+.landprint{border-radius:44% 56% 54% 46% / 12% 10% 14% 11%}
+.landprint:before{background-image:url('/textures/paper-grain.svg')!important;opacity:.4}
+#search{border:0!important;box-shadow:none!important}
+#search input{border:0!important;border-bottom:2px solid #79947d!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#search .icon-submit{background:#41624e!important;border:0!important;box-shadow:3px 2px 0 #b46c50!important}
+.picks a,.book-card,.stacked,.book-stack,.place-stack,.shelf-volume,.collection{
+ background:transparent!important;background-image:none!important;
+ border:0!important;box-shadow:none!important;
+}
+.picks a{border-top:0!important;position:relative}
+.picks a:before,.stack:before,.section-head:after{
+ content:'';position:absolute;pointer-events:none;
+ width:100%;height:8px;top:0;left:0;
+ background:#a67a5790;
+ clip-path:polygon(0 53%,6% 32%,13% 58%,20% 41%,29% 62%,38% 34%,47% 56%,57% 38%,66% 59%,75% 39%,84% 55%,93% 36%,100% 52%,100% 66%,0 66%);
+}
+.section-head{position:relative}
+.section-head:after{top:auto;bottom:-12px;height:7px;background:#79947d55}
+.stacks{gap:5px 36px}
+.book-stack{overflow:visible!important;border-radius:0!important}
+.stack{border:0!important;padding:21px 0!important;position:relative}
+.stack:before{background:#b46c5075;height:7px}
+.stack-copy strong{color:#304a3b}
+.stack em,.place-summary em{font-size:12px;color:#a15f46}
+.place-groups{padding:0 0 14px 10px!important;gap:0!important}
+.place-stack{border-radius:0!important}
+.place-summary{border:0!important;position:relative;padding:12px 8px 12px 22px!important}
+.place-summary:after{
+ content:'';position:absolute;left:0;top:20%;height:65%;width:9px;
+ border-left:2px solid #789379;border-radius:50% 30% 40% 55%;transform:rotate(8deg)
+}
+.place-stack[open]>.place-summary{background:#d4b36a18!important}
+.place-stack .passages{border:0!important;background:transparent!important}
+.book-card .cover,.stack .cover,.shelf-volume .cover{box-shadow:3px 3px 0 #b46c50,6px 5px 0 #d6b66f!important}
+.cover{background-image:url('/textures/paper-grain.svg')!important;background-blend-mode:multiply;box-shadow:3px 3px 0 #b46c50!important}
+.cover:after{border:0!important;background-image:url('/textures/paper-grain.svg')!important;opacity:.28}
+.cover strong{color:inherit}
+.paper{
+ background-color:#f8f0de!important;
+ background-image:url('/textures/paper-grain.svg')!important;
+ background-size:256px 256px!important;background-blend-mode:multiply!important;
+ border:0!important;border-radius:0!important;
+ box-shadow:5px 7px 0 #bba98936!important;
+}
+.paper:before{color:#b46c50;text-shadow:none!important}
+.paper:after{background-image:none!important}
+.prose{color:#304138!important}
+.literary-link{
+ background:#b4c9a488!important;border:0!important;border-radius:40% 60% 44% 56% / 28% 32% 35% 27%;
+ box-shadow:none!important;
+}
+.literary-link:hover{background:#d5b56f99!important}
+.prose mark,.passages mark{background:#d6b66fa8!important;box-shadow:none!important}
+.btn,.reader-controls>.btn,.reader .actions>.btn,.explore-controls .icon-only{
+ border:0!important;box-shadow:none!important;background:#d8d3b9!important;color:#304a3b!important;
+ border-radius:44% 56% 47% 53% / 55% 43% 57% 45%!important;
+}
+.btn.solid,.reader .actions>.btn.solid{background:#41624e!important;color:#fff5d8!important}
+.btn:hover{background:#d6b66f!important}
+.explore-map-shell{border:0!important;box-shadow:none!important}
+.explore-map{border:0!important;border-radius:0!important}
+.map-story,.place-dialog{background:#f8f0de!important;background-image:url('/textures/paper-grain.svg')!important;border:0!important;box-shadow:3px 4px 0 #b46c5070!important;border-radius:41% 59% 48% 52% / 5% 6% 7% 5%!important}
+.footer{border:0!important}
+@media(max-width:650px){
+ .nav{height:66px;gap:7px}.nav nav{gap:1px}.nav nav a{width:38px;height:38px}
+ .nav nav a .icon,.account.icon-only .icon{width:21px!important;height:21px!important}
+ .account.icon-only{width:38px;height:38px}
+ .brand{font-size:16px}.brand small{font-size:7px}
+ .brand-icon{width:33px;height:33px}
+ .stacks{gap:0 18px}
+}
