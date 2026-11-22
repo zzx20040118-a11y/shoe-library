@@ -94,3 +94,8 @@ body:not(:has(.reader)){background:#f3ecdc}
 .prose{white-space:normal;line-height:1.85}
 .prose .novel-paragraph{margin:0 0 1.05em;text-indent:0;white-space:normal}
 .prose .novel-paragraph:last-child{margin-bottom:0}
+
+/* Mirror the Gutenberg HTML edition's actual paragraph style. */
+.prose .novel-paragraph{margin:0;text-indent:2em;line-height:1.85}
+.prose .novel-chapter{font:700 clamp(19px,2.4vw,28px)/1.45 var(--serif);text-align:center;margin:0 0 1.5em}
+.prose .novel-section{text-align:center;font:600 1em/1.6 var(--serif);margin:1.2em 0}
