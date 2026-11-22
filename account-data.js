@@ -53,3 +53,7 @@ export async function savePlaceReview(payload){
  if(!await isPlaceAdmin())throw Error('管理员身份已失效，请重新登录');
  return checked(await client.from('place_reviews').upsert(payload,{onConflict:'book_id,page,at_offset,term'}).select().single());
 }
+
+export async function approvedPlaceReviews(bookId){
+ return checked(await client.from('place_reviews').select('id,book_id,term,page,at_offset,place_name,city,lat,lon,relation_type').eq('book_id',bookId).eq('decision','approved').limit(10000));
+}
