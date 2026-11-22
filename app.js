@@ -183,9 +183,10 @@ function bookCard({book,page,term,source,meta}) {
 function discover(){
   const groups=books.map(book=>({book,hits:matches(book)})).filter(g=>g.hits.length);
   const featured=books.filter(b=>b.anchors?.length).slice(0,3);
-  app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="搜索城市或具体地点，例如 London" value="${esc(query)}"><button class="icon-submit" aria-label="搜索" title="搜索">${icon("search")}</button></form><div class="entry"><a class="explore-link" href="#explore">${icon('locate')} 探索身边</a></div></div></section>
+  app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="搜索城市或具体地点，例如 London" value="${esc(query)}"><button class="icon-submit" aria-label="搜索" title="搜索">${icon("search")}</button></form><div class="entry"><a class="explore-link" href="#explore">${icon('locate')} 探索身边</a></div></div><figure class="landprint"><canvas aria-label="套色山景插画" role="img"></canvas></figure></section>
   ${!query&&featured.length?'<section class="picks"><h2>漫游选读</h2><div>'+featured.map(b=>{const a=b.anchors[0];return '<a href="'+esc(readLink(b,a.page,a.term,a.place))+'"><small>'+esc(a.city)+' · '+esc(a.place)+'</small><h3>'+esc(b.title)+'</h3><p>'+esc(excerpt(b,a.page,a.term,a.snippet,a.at))+'</p></a>'}).join('')+'</div></section>':''}
   <section class="section" id="results"><div class="section-head"><h2>${query?'搜索结果':'全部作品'}</h2><small>${groups.length} 部作品</small></div><div class="stacks"></div><button class="btn icon-only" id="more" aria-label="继续浏览" title="继续浏览">${icon("chevronDown")}</button></section></div>`;
+  drawLandscape(app.querySelector('.landprint canvas'));
   let shown=0;const more=app.querySelector('#more');
   function append(){app.querySelector('.stacks').insertAdjacentHTML('beforeend',groups.slice(shown,shown+24).map(g=>stack(g.book,g.hits)).join(''));shown+=24;more.hidden=shown>=groups.length;}
   append();if(!groups.length)app.querySelector('.stacks').textContent=books.length?'没有找到已收录的具体地点。城市只用于筛选，不能作为地点结果。':'书库正在重建。新作品通过正文与地点审核后将在这里上架。';
