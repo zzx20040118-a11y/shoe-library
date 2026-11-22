@@ -17,17 +17,7 @@ const flag=name=>args[args.indexOf(name)+1];
 const id=flag('--id');
 if(!id||!/^pg\d+$/.test(id)){console.error('Usage: node scripts/prepare-book.mjs --id pg4300 [--annotations path]');process.exit(2)}
 const source=resolve(root,'library',id+'.json.gz');
-let raw;
-try { raw=await readFile(source); }
-catch(error){
-  if(error.code!=='ENOENT')throw error;
-  const archive='https://raw.githubusercontent.com/zzx20040118-a11y/shoe-library/876228c00a71644e54d00fd94fe818f4fa5fa8ca/library/'+id+'.json.gz';
-  console.error('Local original unavailable; fetching archived edition: '+archive);
-  const response=await fetch(archive);
-  if(!response.ok)throw Error('Archived text unavailable: HTTP '+response.status);
-  raw=Buffer.from(await response.arrayBuffer());
-}
-
+const raw=await readFile(source);
 const oldPages=JSON.parse((raw[0]===31&&raw[1]===139?gunzipSync(raw):raw).toString('utf8'));
 if(!Array.isArray(oldPages)||!oldPages.every(p=>typeof p==='string'))throw Error('Invalid original pages');
 const original=oldPages.join('');
