@@ -5,7 +5,7 @@ execFileSync(process.execPath,['scripts/import-more-london.mjs'],{stdio:'inherit
 execFileSync(process.execPath,['scripts/import-chinese.mjs'],{stdio:'inherit'});
 import {mkdir,copyFile} from 'node:fs/promises';
 await mkdir('public',{recursive:true});
-for(const file of ['index.html','app.js','books.js','account-data.js','account-ui.js','landscape.js','style.css']){
+for(const file of ['index.html','app.js','books.js','account-data.js','account-ui.js','place-admin.js','landscape.js','style.css']){
   await copyFile(file,'public/'+file);
 }
 
