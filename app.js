@@ -9,7 +9,16 @@ const icons = {
   search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>',
   pin:'<path d="M19 10c0 5-7 10-7 10S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/>',
   locate:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m10 7h-3m-7 10v-3M2 12h3"/>',
-  user:'<circle cx="12" cy="8" r="3"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>'
+  user:'<circle cx="12" cy="8" r="3"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>',
+  arrowLeft:'<path d="m15 18-6-6 6-6"/>',
+  arrowRight:'<path d="m9 18 6-6-6-6"/>',
+  bookmark:'<path d="M6 4h12v17l-6-4-6 4z"/>',
+  bookmarkCheck:'<path d="M6 4h12v17l-6-4-6 4z"/><path d="m9 10 2 2 4-4"/>',
+  pen:'<path d="M12 19 19 12l3 3-7 7-5 1 1-5 7-7"/><path d="M3 7h10M3 12h6"/>',
+  quote:'<path d="M10 11H5V6h6v7l-4 4M20 11h-5V6h6v7l-4 4"/>',
+  chevronDown:'<path d="m6 9 6 6 6-6"/>',
+  flag:'<path d="M5 21V4m0 1c5-4 9 4 15 0v11c-6 4-10-4-15 0"/>',
+  close:'<path d="M18 6 6 18M6 6l12 12"/>'
 };
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${icons[name]}</svg>`;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
@@ -156,11 +165,11 @@ function stack(book,hits){
     byPlace.get(key).push(h);
   }
   const places=[...byPlace.entries()];
-  const heading=cover(book)+'<span class="stack-copy"><strong>'+esc(book.title)+'</strong><small>'+esc(book.author)+'</small><span>'+esc(query?places.length+' 个具体地点 · '+hits.length+' 处原文提及':'点击查看作品')+'</span></span>';
+  const heading=cover(book)+'<span class="stack-copy"><strong>'+esc(book.title)+'</strong><small>'+esc(book.author)+'</small><span>'+(query?icon('pin')+' '+places.length+' · '+icon('quote')+' '+hits.length:icon('book'))+'</span></span>';
   const link=h=>esc(readLink(book,h.page,h.term,query)+(h.term?'&at='+h.offset:''));
-  return '<details class="stacked book-stack"><summary class="stack">'+heading+'<em>'+places.length+' 个地点</em></summary><div class="place-groups">'+places.map(([place,occurrences])=>{
+  return '<details class="stacked book-stack"><summary class="stack">'+heading+'<em>'+icon('pin')+' '+places.length+'</em></summary><div class="place-groups">'+places.map(([place,occurrences])=>{
     const first=occurrences[0];
-    return '<details class="stacked place-stack"><summary class="place-summary"><strong>'+esc(place==='__book__'?'作品正文':place)+'</strong><small>'+esc(first.city||'')+'</small><em>'+occurrences.length+' 处提及</em></summary><div class="passages">'+occurrences.map((h,i)=>'<a href="'+link(h)+'"><small>第 '+(h.page+1)+' 页 · 第 '+(i+1)+' 处</small>'+paint(h.line,textRanges(h.line,h.term))+'</a>').join('')+'</div></details>';
+    return '<details class="stacked place-stack"><summary class="place-summary"><strong>'+esc(place==='__book__'?'作品正文':place)+'</strong><small>'+esc(first.city||'')+'</small><em>'+icon('quote')+' '+occurrences.length+'</em></summary><div class="passages">'+occurrences.map((h,i)=>'<a href="'+link(h)+'"><small>第 '+(h.page+1)+' 页 · 第 '+(i+1)+' 处</small>'+paint(h.line,textRanges(h.line,h.term))+'</a>').join('')+'</div></details>';
   }).join('')+'</div></details>';
 }
 
@@ -174,9 +183,9 @@ function bookCard({book,page,term,source,meta}) {
 function discover(){
   const groups=books.map(book=>({book,hits:matches(book)})).filter(g=>g.hits.length);
   const featured=books.filter(b=>b.anchors?.length).slice(0,3);
-  app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="搜索城市或具体地点，例如 London" value="${esc(query)}"><button>搜索</button></form><div class="entry"><a class="explore-link" href="#explore">${icon('locate')} 探索身边</a></div></div><figure class="landprint"><canvas aria-label="原创套色版画：层山与落日" role="img"></canvas><figcaption>山行 · 套色习作</figcaption></figure></section>
+  app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="搜索城市或具体地点，例如 London" value="${esc(query)}"><button class="icon-submit" aria-label="搜索" title="搜索">${icon("search")}</button></form><div class="entry"><a class="explore-link" href="#explore">${icon('locate')} 探索身边</a></div></div><figure class="landprint"><canvas aria-label="原创套色版画：层山与落日" role="img"></canvas><figcaption>山行 · 套色习作</figcaption></figure></section>
   ${!query&&featured.length?'<section class="picks"><h2>漫游选读</h2><div>'+featured.map(b=>{const a=b.anchors[0];return '<a href="'+esc(readLink(b,a.page,a.term,a.place))+'"><small>'+esc(a.city)+' · '+esc(a.place)+'</small><h3>'+esc(b.title)+'</h3><p>'+esc(excerpt(b,a.page,a.term,a.snippet,a.at))+'</p></a>'}).join('')+'</div></section>':''}
-  <section class="section" id="results"><div class="section-head"><h2>${query?'搜索结果':'全部作品'}</h2><small>${groups.length} 部作品</small></div><div class="stacks"></div><button class="btn" id="more">继续浏览</button></section></div>`;
+  <section class="section" id="results"><div class="section-head"><h2>${query?'搜索结果':'全部作品'}</h2><small>${groups.length} 部作品</small></div><div class="stacks"></div><button class="btn icon-only" id="more" aria-label="继续浏览" title="继续浏览">${icon("chevronDown")}</button></section></div>`;
   drawLandscape(app.querySelector('.landprint canvas'));
   let shown=0;const more=app.querySelector('#more');
   function append(){app.querySelector('.stacks').insertAdjacentHTML('beforeend',groups.slice(shown,shown+24).map(g=>stack(g.book,g.hits)).join(''));shown+=24;more.hidden=shown>=groups.length;}
@@ -197,7 +206,7 @@ function route() {
 let locationAttempted=false;
 function explore(){
   if(!mapState)mapState={center:{lat:30.25,lon:120.14},zoom:5,selected:null};
-  app.innerHTML=`<section class="explore-page"><header class="explore-head"><div><small>SHOE / CITY NOTES</small><h1>走进书里的街道</h1><p class="explore-intro">从书页走向街道、桥梁与建筑。</p></div><a class="btn" href="#discover">返回发现</a></header><div class="explore-map-shell"><div id="map" class="map explore-map" aria-label="文学地点地图"></div><div class="explore-controls"><button class="btn" id="recenter" ${locating?'disabled':''}>${icon('locate')} ${locating?'定位中…':'回到我的位置'}</button><form id="place-search"><input name="place" aria-label="搜索城市或地点" placeholder="搜索城市或地点" required><button class="btn">查找</button></form></div>${locationMessage?'<p class="explore-message" role="status">'+esc(locationMessage)+'</p>':''}</div></section>`;
+  app.innerHTML=`<section class="explore-page"><header class="explore-head"><div><small>SHOE / CITY NOTES</small><h1>走进书里的街道</h1><p class="explore-intro">从书页走向街道、桥梁与建筑。</p></div><a class="btn icon-only" href="#discover" aria-label="返回发现" title="返回发现">${icon("arrowLeft")}</a></header><div class="explore-map-shell"><div id="map" class="map explore-map" aria-label="文学地点地图"></div><div class="explore-controls"><button class="btn" id="recenter" aria-label="回到我的位置" title="回到我的位置" ${locating?'disabled':''}>${icon("locate")}</button><form id="place-search"><input name="place" aria-label="搜索城市或地点" placeholder="搜索城市或地点" required><button class="btn icon-only" aria-label="查找" title="查找">${icon("search")}</button></form></div>${locationMessage?'<p class="explore-message" role="status">'+esc(locationMessage)+'</p>':''}</div></section>`;
   mapObserver?.disconnect();mapObserver=new ResizeObserver(renderMap);mapObserver.observe(app.querySelector('#map'));renderMap();
   app.querySelector('#recenter').onclick=()=>locate(true);
   app.querySelector('#place-search').onsubmit=e=>{
@@ -413,17 +422,17 @@ function reader(params) {
   const originalBlocks=book.blocks?.[page];
   const readingHtml=originalBlocks?structuredLinkedText(originalBlocks,[...hit,...selectedRanges],places):linkedText(text,[...hit,...selectedRanges],places);
   app.innerHTML = `<div class="wrap inner"><section class="reader">
-    <div class="actions"><a class="btn" href="${previous.shelf && !source ? '#shelf' : '#discover'}">${previous.shelf && !source ? '返回书架' : '返回发现'}</a>
-    <button class="btn solid" id="save-book">${previous.shelf ? '已加入书架' : '加入书架'}</button></div>
+    <div class="actions"><a class="btn" href="${previous.shelf && !source ? '#shelf' : '#discover'}" aria-label="返回" title="返回">${icon("arrowLeft")}</a>
+    <button class="btn solid" id="save-book" aria-label="${previous.shelf ? '已加入书架' : '加入书架'}" title="${previous.shelf ? '已加入书架' : '加入书架'}">${icon(previous.shelf?"bookmarkCheck":"bookmark")}</button></div>
     <article class="paper"><h1>${esc(book.title)}</h1><details class="edition"><summary>${esc(book.author)} · 版本信息</summary>${esc(book.edition||'原创短篇')} ${book.source?'<a target="_blank" rel="noopener" href="'+esc(book.source)+'">查看底本</a>':''} ${book.count?'<a href="https://www.gutenberg.org/policy/license.html">Gutenberg 使用条款</a>':''}</details>
     <div class="prose" id="prose" lang="${({'英文':'en','法文':'fr','德文':'de','西班牙文':'es','芬兰文':'fi','荷兰文':'nl','意大利文':'it','葡萄牙文':'pt','日文':'ja','瑞典文':'sv','俄文':'ru','丹麦文':'da','la':'la'})[book.lang]||'zh'}">${readingHtml}</div>
-    <div class="actions"><a class="btn" href="${studioLink(book,page,'bookmark')}">记一笔</a><button id="save-quote" class="btn">摘录选文</button></div>
+    <div class="actions"><a class="btn" href="${studioLink(book,page,'bookmark')}" aria-label="记一笔" title="记一笔">${icon("pen")}</a><button id="save-quote" class="btn icon-only" aria-label="摘录选文" title="摘录选文">${icon("quote")}</button></div>
     ${cards.length?'<details class="folio"><summary>本页手记 · '+cards.length+'</summary><div class="collections">'+cards.map(collection).join('')+'</div></details>':''}
 
     </article><div class="reader-controls">
-    ${page > 0 ? `<a class="btn" href="${esc(readLink(book,page-1,term,source))}">上一页</a>` : '<button class="btn" disabled>上一页</button>'}
+    ${page > 0 ? `<a class="btn" href="${esc(readLink(book,page-1,term,source))}" aria-label="上一页" title="上一页">${icon("arrowLeft")}</a>` : '<button class="btn" disabled aria-label="上一页">${icon("arrowLeft")}</button>'}
     <details><summary aria-label="调整阅读进度">◒　${page+1} / ${book.pages.length}</summary><label>第 <output id="range-page">${page+1}</output> 页<input id="reading-range" aria-label="阅读进度" type="range" min="1" max="${book.pages.length}" value="${page+1}"></label></details>
-    ${page < book.pages.length-1 ? `<a class="btn" href="${esc(readLink(book,page+1,term,source))}">下一页</a>` : '<button class="btn" disabled>下一页</button>'}
+    ${page < book.pages.length-1 ? `<a class="btn" href="${esc(readLink(book,page+1,term,source))}" aria-label="下一页" title="下一页">${icon("arrowRight")}</a>` : '<button class="btn" disabled aria-label="下一页">${icon("arrowRight")}</button>'}
     </div></section></div>`;
   const slider=app.querySelector('#reading-range');if(slider){slider.oninput=()=>app.querySelector('#range-page').textContent=slider.value;slider.onchange=()=>location.hash=readLink(book,Number(slider.value)-1,term,source);}
   const target = document.querySelector('#prose');
@@ -635,7 +644,7 @@ async function boot(){
   }catch{toast('账号数据暂时无法加载，请刷新重试。')}
   personal.watchSession(user?.id||null);
   const account=document.querySelector('#account');
-  account.innerHTML='<button class="account">'+icon('user')+(user?'个人资料':'邮箱登录')+'</button>';
+  account.innerHTML='<button class="account icon-only" aria-label="账户" title="账户">'+icon('user')+'</button>';
   account.firstChild.onclick=showAccount;
   render();
   window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0)});
