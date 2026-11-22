@@ -229,7 +229,7 @@ function unproject(x,y,z){
 function renderMap(){
   const t=app.querySelector('#map');if(!t||!mapState)return;
   const {center,zoom}=mapState,[cx,cy]=project(center,zoom),w=t.clientWidth,h=t.clientHeight,n=2**zoom,x0=cx-w/2,y0=cy-h/2;
-  let html='';for(let x=Math.floor(x0/256);x<=Math.floor((x0+w)/256);x++)for(let y=Math.max(0,Math.floor(y0/256));y<=Math.min(n-1,Math.floor((y0+h)/256));y++)html+='<img draggable="false" alt="" width="256" height="256" src="https://basemaps.cartocdn.com/light_nolabels/'+zoom+'/'+((x%n+n)%n)+'/'+y+'.png" style="left:'+(x*256-x0)+'px;top:'+(y*256-y0)+'px">';
+  let html='';for(let x=Math.floor(x0/256);x<=Math.floor((x0+w)/256);x++)for(let y=Math.max(0,Math.floor(y0/256));y<=Math.min(n-1,Math.floor((y0+h)/256));y++)html+='<img draggable="false" alt="" width="256" height="256" src="https://tile.openstreetmap.org/'+zoom+'/'+((x%n+n)%n)+'/'+y+'.png" style="left:'+(x*256-x0)+'px;top:'+(y*256-y0)+'px">';
   const groups=[];
   for(const a of anchors){
     const [px,py]=project(a,zoom),x=px-x0,y=py-y0;
@@ -241,7 +241,7 @@ function renderMap(){
   if(mapState.user){const [x,y]=project(mapState.user,zoom);html+='<i class="here" title="你的位置" style="left:'+(x-x0)+'px;top:'+(y-y0)+'px"></i>'}
   const g=groups.find(g=>g.items.some(a=>a.id===mapState.selected)),i=g?.items.findIndex(a=>a.id===mapState.selected),a=g?.items[i];
   if(a){const b=getBook(a.bookId),line=excerpt(b,a.page,a.term,a.snippet);html+='<aside class="map-story">'+cover(b)+'<div><small>'+esc(a.city+' · '+a.place)+'</small><h3>'+esc(b.title)+'</h3><small>'+esc(b.author)+'</small><p>'+paint(line,textRanges(line,a.term))+'</p><a href="'+esc(readLink(b,a.page,a.term,a.place))+'">阅读原文</a> '+(g.items.length>1?'<button data-cycle>下一段 '+(i+1)+' / '+g.items.length+'</button>':'')+' <button data-dismiss>收起</button></div></aside>'}
-  t.innerHTML=html+'<div class="map-tools"><button data-zoom="1" aria-label="放大">+</button><button data-zoom="-1" aria-label="缩小">−</button></div><span class="map-note"><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a> · <a href="https://carto.com/attributions">CARTO</a></span>';
+  t.innerHTML=html+'<div class="map-tools"><button data-zoom="1" aria-label="放大">+</button><button data-zoom="-1" aria-label="缩小">−</button></div><span class="map-note"><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a></span>';
   t.onclick=e=>{const b=e.target.closest('button');if(!b)return;
     if(b.hasAttribute('data-group'))mapState.selected=groups[Number(b.dataset.group)].items[0].id;
     if(b.hasAttribute('data-cycle'))mapState.selected=g.items[(i+1)%g.items.length].id;
