@@ -71,3 +71,21 @@ body:not(:has(.reader)){background:#f3ecdc}
 .explore-map .map-story .place-evidence{font-size:12px;line-height:1.65;color:#61695d;background:#f4f0e5;border-left:2px solid #9b9d81;padding:7px 9px;margin:10px 0}
 .explore-map .map-story .place-evidence strong{color:#354b39}
 @media(max-width:650px){.explore-intro{font-size:12px}.explore-filter{padding:0 14px 10px;margin:0}.explore-filter #place-count{width:100%;margin-left:0}}
+
+/* Literary map: no public provenance paragraphs, only two location identities. */
+.explore-map .map-story{position:relative}
+.explore-map .map-story .place-kind,.place-dialog .place-kind{display:inline-flex;align-items:center;gap:6px;margin:8px 0;color:#36513f;font-size:12px;font-weight:600}
+.explore-map .map-story .place-kind span,.place-dialog .place-kind span{font-size:17px;line-height:1}
+.explore-map .map-story .place-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:9px}
+.explore-map .map-story .place-actions button{background:none;border:0;color:#716e63;font-size:12px;text-decoration:underline;cursor:pointer}
+.explore-map .map-story .map-story-close{position:absolute;top:8px;right:9px;border:0;background:#fffdf7;color:#405747;font-size:24px;line-height:1;width:30px;height:30px;cursor:pointer;border-radius:50%}
+.place-dialog .section-head{position:relative;padding-right:40px}
+.place-dialog .dialog-x{position:absolute;top:0;right:0;background:transparent;border:0;font-size:26px;color:#405747;cursor:pointer;width:36px;height:36px}
+.place-report-dialog{border:1px solid #c8c1ad;background:#fffaf0;color:#293d30;border-radius:8px;padding:28px;width:min(460px,calc(100% - 32px));max-height:85vh}
+.place-report-dialog::backdrop{background:#1d3024a8}
+.place-report-dialog form{display:grid;gap:14px}
+.place-report-dialog form>small{letter-spacing:.16em;color:#788272;font-size:11px}
+.place-report-dialog label{display:grid;gap:6px;font-size:13px}
+.place-report-dialog select,.place-report-dialog textarea{font:inherit;background:#fffdf8;border:1px solid #c9c8b8;padding:10px;border-radius:4px;width:100%;box-sizing:border-box}
+.place-report-dialog textarea{min-height:110px;resize:vertical}
+.place-report-dialog .dialog-x{position:absolute;right:12px;top:10px;background:transparent;border:0;font-size:26px;cursor:pointer}
