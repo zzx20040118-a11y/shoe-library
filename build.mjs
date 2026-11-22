@@ -2,7 +2,6 @@ import {execFileSync} from 'node:child_process';
 execFileSync(process.execPath,['scripts/pilot-sherlock.mjs'],{stdio:'inherit'});
 execFileSync(process.execPath,['scripts/import-london.mjs'],{stdio:'inherit'});
 execFileSync(process.execPath,['scripts/import-more-london.mjs'],{stdio:'inherit'});
-execFileSync(process.execPath,['scripts/import-chinese.mjs'],{stdio:'inherit'});
 import {readFile, mkdir, writeFile, copyFile} from 'node:fs/promises';
 
 import {allBooks,anchors} from './books.js';
@@ -17,9 +16,6 @@ const files = {
   '/books/pg963.json':['public/books/pg963.json','application/json;charset=utf-8'],
   '/books/pg883.json':['public/books/pg883.json','application/json;charset=utf-8'],
   '/books/pg700.json':['public/books/pg700.json','application/json;charset=utf-8'],
-  '/books/zh-chaohua.json':['public/books/zh-chaohua.json','application/json;charset=utf-8'],
-  '/books/zh-chunfeng.json':['public/books/zh-chunfeng.json','application/json;charset=utf-8'],
-  '/books/zh-qinhuai.json':['public/books/zh-qinhuai.json','application/json;charset=utf-8'],
   '/books/pg43.json':['public/books/pg43.json','application/json;charset=utf-8'],
   '/':['index.html','text/html;charset=utf-8'],
   '/style.css':['style.css','text/css;charset=utf-8'],
