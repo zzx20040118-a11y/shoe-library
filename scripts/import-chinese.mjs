@@ -29,7 +29,7 @@ async function fetchHtml(page){
 }
 function parseBlocks(html){
  // Strip embedded MediaWiki styles and scripts before parsing text nodes.
- html=html.replace(/<(style|script|noscript|template)\\b[^>]*>[\\s\\S]*?<\\/\\1>/gi,'');
+ html=html.replace(/<(style|script|noscript|template)\b[^>]*>[\s\S]*?<\/\1>/gi,'');
  const output=[];
  // Ignore page navigation, footnotes and table of contents, retain only source paragraphs and section headings.
  for(const m of html.matchAll(/<(p|h2|h3|h4|div)\b([^>]*)>([\s\S]*?)<\/\1>/gi)){
