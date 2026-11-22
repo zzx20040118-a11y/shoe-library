@@ -102,25 +102,25 @@ function textRanges(text, term) {
 function locatedBook(book, anchor) {
   return {...book,city:anchor.city,place:anchor.place,lat:anchor.lat,lon:anchor.lon,featured:anchor.page};
 }
-function excerpt(book,page,term,hint='') {
+function excerpt(book,page,term,hint='',offset) {
   const text=book.pages[page] || hint || book.sample || '';
-  const at=Math.max(0,text.toLowerCase().indexOf(term.toLowerCase()));
+  const at=book.pages[page] && Number.isInteger(offset) ? offset : Math.max(0,text.toLowerCase().indexOf(term.toLowerCase()));
   return text.slice(Math.max(0,at-26),at+Math.max(term.length,1)+75).trim();
 }
 const themes={'城市日常':['茶','市集','market'],'食物与味觉':['酒','茶','早餐','breakfast'],'街道与建筑':['街','桥','楼','street','bridge'],'季节与天气':['雪','雨','春','snow','rain'],'旅行与行走':['舟','旅','步行','walk'],'故乡与记忆':['故乡','乡愁','记忆','memory']};
 function matches(book) {
   const needle=normalize(query), hits=new Map();
-  function add(page,term,hint='') {
-    const line=excerpt(book,page,term,hint);
+  function add(page,term,hint='',offset) {
+    const line=excerpt(book,page,term,hint,offset);
     const key=page+'|'+line;
     if(!hits.has(key)) hits.set(key,{page,term,line});
   }
   if(needle){
-    const words=themes[query]||[];
+    const words=Object.hasOwn(themes,query)?themes[query]:[];
     for(const a of book.anchors||[]){
       const context=a.snippet || book.pages[a.page] || ''; const theme=words.find(w=>normalize(context).includes(w));
       if(theme)add(a.page,theme,context);
-      if([a.term,a.place,a.city,a.keywords,a.snippet||''].some(v=>normalize(v).includes(needle))) add(a.page,(a.snippet||'').toLowerCase().includes(needle)?query:a.term,a.snippet);
+      if([a.term,a.place,a.city,a.keywords,a.snippet||''].some(v=>normalize(v).includes(needle))) add(a.page,(a.snippet||'').toLowerCase().includes(needle)?query:a.term,a.snippet,a.at);
     }
     if(!book.count||book.loaded) book.pages.forEach((p,i)=>{if(normalize(p).includes(needle))add(i,query)});
     if(!hits.size&&normalize(book.sample||'').includes(needle))add(0,query);
@@ -149,7 +149,7 @@ function discover(){
   app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="书名、作家、地点、生活主题或原文" value="${esc(query)}"><button>搜索</button></form><div class="entry"><button id="locate" ${locating?'disabled':''}>${icon('locate')} ${locating?'定位中…':'探索身边'}</button><button id="open-map">文学地图</button><button id="theme-pick">季节与天气</button></div></div><figure><img src="./paris.jpg" alt="巴黎屋顶与城市天际线"><figcaption>Paris · 巴黎</figcaption></figure></section>
   ${locationMessage?'<p role="status">'+esc(locationMessage)+'</p>':''}
   ${mapState?'<section id="nearby"><div class="section-head"><h2>文学地图</h2><button class="btn" id="close-map">收起地图</button></div><div id="map" class="map"></div></section>':''}
-  ${!query?'<section class="picks"><h2>漫游选读</h2><div>'+featured.map(b=>{const a=b.anchors[0];return '<a href="'+esc(readLink(b,a.page,a.term,a.place))+'"><small>'+esc(a.city)+' · '+esc(a.place)+'</small><h3>'+esc(b.title)+'</h3><p>'+esc(excerpt(b,a.page,a.term,a.snippet))+'</p></a>'}).join('')+'</div></section>':''}
+  ${!query?'<section class="picks"><h2>漫游选读</h2><div>'+featured.map(b=>{const a=b.anchors[0];return '<a href="'+esc(readLink(b,a.page,a.term,a.place))+'"><small>'+esc(a.city)+' · '+esc(a.place)+'</small><h3>'+esc(b.title)+'</h3><p>'+esc(excerpt(b,a.page,a.term,a.snippet,a.at))+'</p></a>'}).join('')+'</div></section>':''}
   <section class="section" id="results"><div class="section-head"><h2>${query?'搜索结果':'全部作品'}</h2><small>${groups.length} 部作品与版本</small></div><div class="stacks"></div><button class="btn" id="more">继续浏览</button></section></div>`;
   let shown=0;const more=app.querySelector('#more');
   function append(){app.querySelector('.stacks').insertAdjacentHTML('beforeend',groups.slice(shown,shown+24).map(g=>stack(g.book,g.hits)).join(''));shown+=24;more.hidden=shown>=groups.length;}
@@ -253,7 +253,8 @@ function shelf() {
     <section class="section"><div class="section-head"><h2>继续阅读</h2><a class="btn" href="#discover">发现作品</a></div>
     ${saved.length ? `<div class="grid">${saved.map(book => {
       const record = records['book:'+book.id];
-      return bookCard({book,meta:`${record.page===book.pages.length-1?'已读至末页':'阅读中'} · ${record.page+1}/${book.pages.length} 页${record.discovery ? ' · ' + record.discovery : ''}`});
+      const progress=record.page+1;
+      return `<a class="shelf-volume" href="${esc(readLink(book,null))}">${cover(book)}<div><h3>${esc(book.title)}</h3><small>${esc(book.author)}</small><p>${progress===book.pages.length?"已读至末页":"阅读中"} · ${progress} / ${book.pages.length} 页</p><progress aria-label="阅读进度" value="${progress}" max="${book.pages.length}"></progress></div></a>`;
     }).join('')}</div>` : '<div class="empty">书架还是空的。打开一本书，点击「加入书架」，就能从这里继续读。</div>'}</section>
     <section class="section"><div class="section-head"><h2>摘录与手记</h2><a class="btn" href="#journal">查看手记</a></div>
     ${cards.length ? `<div class="collections">${cards.map(collection).join('')}</div>` : '<div class="empty">在阅读器里制作书签，或选中文字制作一张摘录卡。</div>'}</section></div>`;
@@ -316,7 +317,7 @@ function reader(params) {
     <div class="actions"><a class="btn" href="${previous.shelf && !source ? '#shelf' : '#discover'}">${previous.shelf && !source ? '返回书架' : '返回发现'}</a>
     <button class="btn solid" id="save-book">${previous.shelf ? '已加入书架' : '加入书架'}</button></div>
     <article class="paper"><h1>${esc(book.title)}</h1><details class="edition"><summary>${esc(book.author)} · 版本信息</summary>${esc(book.edition||'原创短篇')} ${book.source?'<a target="_blank" rel="noopener" href="'+esc(book.source)+'">查看底本</a>':''} ${book.count?'<a href="https://www.gutenberg.org/policy/license.html">Gutenberg 使用条款</a>':''}</details>
-    <div class="prose" id="prose" lang="${book.lang==='英文'?'en':'zh'}">${linkedText(text,[...hit,...selectedRanges],places)}</div>
+    <div class="prose" id="prose" lang="${({'英文':'en','法文':'fr','德文':'de','西班牙文':'es','芬兰文':'fi','荷兰文':'nl','意大利文':'it','葡萄牙文':'pt','日文':'ja','瑞典文':'sv','俄文':'ru','丹麦文':'da','la':'la'})[book.lang]||'zh'}">${linkedText(text,[...hit,...selectedRanges],places)}</div>
     <div class="actions"><a class="btn" href="${studioLink(book,page,'bookmark')}">记一笔</a><button id="save-quote" class="btn">摘录选文</button></div>
     ${cards.length?'<details class="folio"><summary>本页手记 · '+cards.length+'</summary><div class="collections">'+cards.map(collection).join('')+'</div></details>':''}
 
@@ -546,4 +547,3 @@ async function boot() {
   });
 }
 boot();
-
