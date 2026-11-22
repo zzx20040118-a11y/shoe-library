@@ -55,5 +55,26 @@ export async function savePlaceReview(payload){
 }
 
 export async function approvedPlaceReviews(bookId){
- return checked(await client.from('place_reviews').select('id,book_id,term,page,at_offset,place_name,city,lat,lon,relation_type').eq('book_id',bookId).eq('decision','approved').limit(10000));
+ return checked(await client.from('place_reviews').select('id,book_id,term,page,at_offset,place_name,city,lat,lon,relation_type,note,coordinate_precision').eq('book_id',bookId).eq('decision','approved').limit(10000));
+}
+
+export async function additionalPlaceLocations(bookId){
+ const parents=await approvedPlaceReviews(bookId);
+ if(!parents.length)return [];
+ return checked(await client.from('place_review_locations').select('*').in('review_id',parents.map(p=>p.id)).limit(10000));
+}
+export async function saveAdditionalPlaceLocations(reviewId,locations){
+ if(!await isPlaceAdmin())throw Error('仅管理员可编辑地点');
+ const existing=checked(await client.from('place_review_locations').select('id').eq('review_id',reviewId));
+ const ids=new Set(locations.map(x=>x.id).filter(Boolean));
+ for(const x of existing)if(!ids.has(x.id))checked(await client.from('place_review_locations').delete().eq('id',x.id).eq('review_id',reviewId));
+ for(const x of locations){
+  const payload={review_id:reviewId,place_name:x.place_name,city:x.city,lat:x.lat,lon:x.lon,relation_type:x.relation_type,evidence:x.evidence,note:x.note||null,coordinate_precision:x.coordinate_precision||'exact'};
+  if(x.id)checked(await client.from('place_review_locations').update(payload).eq('id',x.id).eq('review_id',reviewId));
+  else checked(await client.from('place_review_locations').insert(payload));
+ }
+}
+export async function listAdditionalPlaceLocations(reviewIds){
+ if(!reviewIds.length)return [];
+ return checked(await client.from('place_review_locations').select('*').in('review_id',reviewIds).limit(10000));
 }
