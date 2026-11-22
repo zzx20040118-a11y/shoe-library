@@ -1,3 +1,6 @@
+import * as personal from './account-data.js';
+import {accountDialog} from './account-ui.js';
+import {drawLandscape} from './landscape.js';
 import {books,allBooks,anchors,loadBook,pagesOrigin,cloudOrigin} from './books.js';
 
 const app = document.querySelector('#app');
@@ -19,7 +22,6 @@ const pageOf = (book, value) => Math.max(0, Math.min(book.pages.length - 1, Numb
 
 let records = {};
 let user = null;
-let online = false;
 let query = '';
 let region = '全部';
 let mapState;
@@ -41,16 +43,11 @@ function localState() {
   try { return JSON.parse(localStorage.getItem('atlas-guest') || '{}'); }
   catch { return {}; }
 }
-async function save(key, value) {
-  const task = writeQueue.catch(() => {}).then(async () => {
-    if (online) {
-      const response = await fetch('/api/records', {
-        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key,value})
-      });
-      if (!response.ok) throw new Error('保存失败');
-    } else {
-      localStorage.setItem('atlas-guest', JSON.stringify({...records,[key]:value}));
-    }
+async function save(key,value,membership){
+  const owner=user?.id;
+  const task=writeQueue.catch(()=>{}).then(async()=>{
+    if(owner)await personal.persist(owner,key,value,membership);
+    else localStorage.setItem('atlas-guest',JSON.stringify({...localState(),[key]:value}));
     records = {...records,[key]:value};
   });
   writeQueue = task;
@@ -63,7 +60,7 @@ function saveProgress(book, page, shelf, discovery) {
     page, shelf:shelf ?? previous.shelf ?? false,
     discovery:discovery || previous.discovery || '',
     updated:Date.now()
-  });
+  },shelf);
 }
 function readLink(book, page, term = '', source = '') {
   const params = new URLSearchParams({id:book.id});
@@ -172,15 +169,16 @@ function bookCard({book,page,term,source,meta}) {
 function discover(){
   const groups=books.map(book=>({book,hits:matches(book)})).filter(g=>g.hits.length);
   const featured=['fusheng','huxin','pg1661'].map(id=>getBook(id));
-  app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="书名、作家、地点、生活主题或原文" value="${esc(query)}"><button>搜索</button></form><div class="entry"><button id="locate" ${locating?'disabled':''}>${icon('locate')} ${locating?'定位中…':'探索身边'}</button><button id="open-map">文学地图</button><button id="theme-pick">季节与天气</button></div></div><figure><img src="./paris.jpg" alt="巴黎屋顶与城市天际线"><figcaption>Paris · 巴黎</figcaption></figure></section>
+  app.innerHTML=`<div class="wrap"><section class="spread"><div><h1>在一座城里，<br>读到另一座城。</h1><form id="search"><input name="query" aria-label="文学搜索" placeholder="书名、作家、地点、生活主题或原文" value="${esc(query)}"><button>搜索</button></form><div class="entry"><button id="locate" ${locating?'disabled':''}>${icon('locate')} ${locating?'定位中…':'探索身边'}</button><button id="open-map">文学地图</button><button id="theme-pick">季节与天气</button></div></div><figure class="landprint"><canvas aria-label="原创套色版画：层山与落日" role="img"></canvas><figcaption>山行 · 套色习作</figcaption></figure></section>
   ${locationMessage?'<p role="status">'+esc(locationMessage)+'</p>':''}
   ${mapState?'<section id="nearby"><div class="section-head"><h2>文学地图</h2><button class="btn" id="close-map">收起地图</button></div><div id="map" class="map"></div></section>':''}
   ${!query?'<section class="picks"><h2>漫游选读</h2><div>'+featured.map(b=>{const a=b.anchors[0];return '<a href="'+esc(readLink(b,a.page,a.term,a.place))+'"><small>'+esc(a.city)+' · '+esc(a.place)+'</small><h3>'+esc(b.title)+'</h3><p>'+esc(excerpt(b,a.page,a.term,a.snippet,a.at))+'</p></a>'}).join('')+'</div></section>':''}
   <section class="section" id="results"><div class="section-head"><h2>${query?'搜索结果':'全部作品'}</h2><small>${groups.length} 部作品与版本</small></div><div class="stacks"></div><button class="btn" id="more">继续浏览</button></section></div>`;
+  drawLandscape(app.querySelector('.landprint canvas'));
   let shown=0;const more=app.querySelector('#more');
   function append(){app.querySelector('.stacks').insertAdjacentHTML('beforeend',groups.slice(shown,shown+24).map(g=>stack(g.book,g.hits)).join(''));shown+=24;more.hidden=shown>=groups.length;}
   append();if(!groups.length)app.querySelector('.stacks').textContent='未找到匹配。可以试试原文拼写或作者姓氏。';
-  app.querySelector('#search').onsubmit=e=>{e.preventDefault();query=new FormData(e.currentTarget).get('query').trim();render();app.querySelector('#results')?.scrollIntoView();};
+  app.querySelector('#search').onsubmit=e=>{e.preventDefault();query=new FormData(e.currentTarget).get('query').trim();if(user&&query)personal.logSearch(query).catch(()=>toast('搜索历史暂未同步'));render();app.querySelector('#results')?.scrollIntoView();};
   app.querySelector('#theme-pick').onclick=()=>{query='季节与天气';render();app.querySelector('#results').scrollIntoView()};
   more.onclick=append;app.querySelector('#locate').onclick=locate;
   app.querySelector('#open-map').onclick=()=>{mapState||={center:{lat:30.25,lon:120.14},zoom:5};render();app.querySelector('#nearby').scrollIntoView();};
@@ -374,12 +372,14 @@ function reader(params) {
   target.onkeyup = () => {selection = null; selection = selectedText();};
   document.querySelector('#save-quote').onpointerdown = event => {selection = selectedText(); if (selection) event.preventDefault();};
   document.querySelector('#save-quote').onclick = () => {
+    if(!user){showAccount();return;}
     const range = selectedText() || (hit.length ? [0,text.length] : null);
     if (!range) { toast('先选中想收藏的文字。'); return; }
     draft = {book:book.id,page,type:'quote',quote:text.slice(...range),range};
     location.hash = studioLink(book,page,'quote');
   };
   document.querySelector('#save-book').onclick = async event => {
+    if(!user){showAccount();return;}
     const button = event.currentTarget;
     button.disabled = true;
     try {
@@ -424,17 +424,13 @@ function studio(params) {
   const photoRemove = document.querySelector('#remove-photo');
   const submit = document.querySelector('#save-card');
   const id = saved ? key.slice(6) : crypto.randomUUID();
-  let pendingPhoto = null;
   let revision = 0;
   const sharing = document.querySelector('#sharing');
   card.anchor = card.anchor || params.get('anchor') || '';
   function sharingOptions() {
     const places = getBook(card.book).anchors?.filter(a=>a.page === card.page) || [];
     if (!places.some(a=>a.id === card.anchor)) card.anchor = places[0]?.id || '';
-    if (!card.anchor || !online) card.shared = false;
-    sharing.innerHTML = !places.length ? '' : !online ? '<p class="sub">登录后可把书签分享给这里的读者。</p>' :
-      `<label>对应原文<select name="anchor">${opts(places.map(a=>[a.id,a.term+' · '+(getBook(card.book).pages[card.page]?.slice(Math.max(0,a.at-5),a.at+a.term.length+7) || a.snippet || a.term)]),card.anchor)}</select></label>
-      <label class="share-check"><input type="checkbox" name="shared" ${card.shared ? 'checked' : ''}>公开这张卡片（包含照片与备忘）</label>`;
+    card.shared=false;sharing.textContent='仅自己可见';
   }
   sharingOptions();
   const update = () => {
@@ -483,14 +479,13 @@ function studio(params) {
       bitmap.close();
       if (current !== revision) return;
       card.photo = canvas.toDataURL('image/jpeg',.8);
-      pendingPhoto = await new Promise(resolve => canvas.toBlob(resolve,'image/jpeg',.8));
       photoStatus.textContent = '照片已添加';
       update();
     } catch(error) { if (current === revision) photoStatus.textContent = file.size > 15_000_000 ? error.message : '无法读取图片，请换一张。'; }
     finally { if (current === revision) submit.disabled = false; }
   };
   photoRemove.onclick = () => {
-    revision++; pendingPhoto = null; card.photo = ''; photo.value = '';
+    revision++; card.photo = ''; photo.value = '';
     photoStatus.textContent = ''; submit.disabled = false; update();
   };
   editor.onsubmit = async event => {
@@ -498,16 +493,9 @@ function studio(params) {
     submit.disabled = true;
     try {
       const snapshot = {...card,updated:Date.now()};
-      if (online && pendingPhoto) {
-        const url = '/api/photo/' + crypto.randomUUID();
-        const response = await fetch(url,{method:'PUT',body:pendingPhoto});
-        if (!response.ok) throw new Error();
-        snapshot.photo = url;
-      }
+      if(!user){showAccount();return;}
       await save('craft:'+id,snapshot);
-      if (online && saved?.photo?.startsWith('/api/photo/') && saved.photo !== snapshot.photo) {
-        fetch(saved.photo,{method:'DELETE'}).catch(() => {});
-      }
+
       draft = null;
       toast('已保存到对应书页。');
       location.hash = readLink(getBook(snapshot.book),snapshot.page);
@@ -551,29 +539,26 @@ async function render() {
   else if (name === 'studio') studio(params);
   else discover();
 }
-async function boot() {
-  document.querySelectorAll('[data-icon]').forEach(element => element.innerHTML = icon(element.dataset.icon));
+async function refreshPersonal(){
+  await writeQueue.catch(()=>{});
+  const next=await personal.cloudRecords(user.id);
+  records=next;
+  if(route().name!=='studio')render();
+}
+function showAccount(){accountDialog({user,local:localState,refresh:refreshPersonal,waitWrites:()=>writeQueue.catch(()=>{}),onSearch:term=>{query=term;location.hash='discover';render()}})}
+async function boot(){
+  document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
+  records=localState();
   try {
-    if(staticSite) { records=localState(); } else {
-    const response = await fetch('/api/records',{cache:'no-store'});
-    if (!response.ok) throw new Error();
-    const state = await response.json();
-    user = state.user;
-    online = Boolean(user);
-    records = online ? state.records : localState();
-    }
-  } catch { records = localState(); }
-  const account = document.querySelector('#account');
-  const returnTo = encodeURIComponent('/'+location.hash);
-  account.innerHTML = user
-    ? `<a class="account" href="/signout-with-chatgpt?return_to=%2F" title="退出登录" target="_top">${icon('user')}<span>${esc(user.name)}</span> · 退出</a>`
-    : `<a class="account" data-login href="${accountOrigin}/signin-with-chatgpt?return_to=${returnTo}" target="_top">${icon('user')} 登录云书架</a>`;
+    user=await personal.sessionUser();
+    if(user){records={};records=await personal.cloudRecords(user.id)}
+  }catch{toast('账号数据暂时无法加载，请刷新重试。')}
+  personal.watchSession(user?.id||null);
+  const account=document.querySelector('#account');
+  account.innerHTML='<button class="account">'+icon('user')+(user?'个人资料':'邮箱登录')+'</button>';
+  account.firstChild.onclick=showAccount;
   render();
-  window.addEventListener('hashchange',() => {
-    render();
-    const signIn = account.querySelector('[data-login]');
-    if (signIn) signIn.href = accountOrigin+'/signin-with-chatgpt?return_to=' + encodeURIComponent('/'+location.hash);
-    window.scrollTo(0,0);
-  });
+  window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0)});
+  if(user)window.addEventListener('focus',()=>{if(!document.querySelector('dialog')&&['shelf','journal'].includes(route().name))refreshPersonal().catch(()=>toast('暂时无法同步'))});
 }
 boot();

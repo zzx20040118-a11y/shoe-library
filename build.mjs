@@ -10,7 +10,11 @@ const files = {
   '/legacy.js':['legacy.js','text/javascript;charset=utf-8'],
   '/fusheng.js':['fusheng.js','text/javascript;charset=utf-8'],
   '/books.js':['books.js','text/javascript;charset=utf-8'],
-  '/hero.jpg':['hero.jpg','image/jpeg']
+  '/account-data.js':['account-data.js','text/javascript;charset=utf-8'],
+  '/account-ui.js':['account-ui.js','text/javascript;charset=utf-8'],
+  '/landscape.js':['landscape.js','text/javascript;charset=utf-8'],
+  '/vendor/supabase-2.49.8.js':['vendor/supabase-2.49.8.js','text/javascript;charset=utf-8'],
+  '/vendor/SUPABASE-LICENSE':['vendor/SUPABASE-LICENSE','text/plain;charset=utf-8']
 };
 const assets = await Promise.all(Object.entries(files).map(async ([route,[path,type]]) => [
   route, {data: (await readFile(path)).toString(type === 'image/jpeg' ? 'base64' : 'utf8'),type}

@@ -1,6 +1,9 @@
 import {mkdir,copyFile} from 'node:fs/promises';
 await mkdir('public',{recursive:true});
-for(const file of ['index.html','app.js','books.js','catalog.js','legacy.js','fusheng.js','hero.jpg','paris.jpg','style.css']){
+for(const file of ['index.html','app.js','books.js','catalog.js','legacy.js','fusheng.js','account-data.js','account-ui.js','landscape.js','style.css']){
   await copyFile(file,'public/'+file);
 }
 
+
+await mkdir('public/vendor',{recursive:true});
+for(const name of ['supabase-2.49.8.js','SUPABASE-LICENSE'])await copyFile('vendor/'+name,'public/vendor/'+name);
