@@ -107,6 +107,30 @@ for(const work of works){
    }
   }
  }
+ // Discovery pass: generate reviewable candidates from every page, independently
+ // of the small set of approved map annotations. Never publish these as map pins.
+ const candidateByName=new Map();
+ const placePattern=/[\\p{Script=Han}]{2,12}(?:大学|学校|书屋|书院|故居|公园|寺|庙|桥|路|街|巷|弄|胡同|车站|码头|医院|图书馆|学堂|会馆|山庄|花园|园|楼|馆|河|湖|山|岛)/gu;
+ const ignored=/^(?:我们的|他们的|自己的|这样的|那里的|这里的|所谓的|一个|那个|这个|什么|所有|学校的|大学的)/u;
+ for(let p=0;p<pages.length;p++){
+  const text=pages[p];
+  for(const found of text.matchAll(placePattern)){
+   const raw=found[0];
+   // Save overlapping suffix candidates, rather than silently trusting greedy segmentation.
+   const variants=new Set([raw]);
+   for(let i=1;i<raw.length-1;i++)if(/[\\p{Script=Han}]/u.test(raw[i])&&i>=2)variants.add(raw.slice(i));
+   for(const term of variants){
+    if(term.length<2||ignored.test(term))continue;
+    const key=term;
+    const item=candidateByName.get(key)||{term,mentions:[],status:'needs-review'};
+    item.mentions.push({page:p,at:found.index+raw.length-term.length,context:text.slice(Math.max(0,found.index-35),Math.min(text.length,found.index+raw.length+55))});
+    candidateByName.set(key,item);
+   }
+  }
+ }
+ const reviewCandidates=[...candidateByName.values()].sort((a,b)=>b.mentions.length-a.mentions.length);
+ await writeFile('public/books/'+work.id+'-place-review.json',JSON.stringify({bookId:work.id,method:'automated suffix discovery, unverified',candidates:reviewCandidates}));
+ console.log('place discovery',work.id,reviewCandidates.length,'unverified candidates');
  const data={id:work.id,title:work.title,author:work.author,source:sources[0],sources,
   sourceType:'Wikisource Chinese original (zh-hans)',sourceSha256:createHash('sha256').update(pages.join('\n\n')).digest('hex'),
   pages,blocks:paged,locations,
