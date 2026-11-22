@@ -328,8 +328,8 @@ function linkedText(text, ranges, places) {
   html += segment(cursor,text.length);
   // Render actual novel paragraphs, rather than relying on plain-text whitespace.
   // This preserves every text offset used by highlights, quotations and place links.
-  const parts=html.split(/(?:\\r?\\n[ \\t]*){2,}/);
-  return parts.map(part=>'<p class="novel-paragraph">'+part.replace(/^\\s+|\\s+$/g,'').replace(/\\r?\\n/g,' ')+'</p>').join('');
+  const parts=html.split(/(?:\r?\n[ \t]*){2,}/);
+  return parts.map(part=>'<p class="novel-paragraph">'+part.replace(/^\s+|\s+$/g,'').replace(/\r?\n/g,' ')+'</p>').join('');
 }
 function openCommunity(a,book) {
   const dialog = document.createElement('dialog');
